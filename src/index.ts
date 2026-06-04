@@ -5,13 +5,13 @@ export type {
 } from "./react/useChatSession.js";
 
 export { SunnyChat } from "./ui/SunnyChat.js";
-export type { SunnyChatProps } from "./ui/SunnyChat.js";
+export type { SunnyChatProps, SunnyChatUi } from "./ui/SunnyChat.js";
 
 export { MessageList } from "./ui/MessageList.js";
-export type { MessageListProps } from "./ui/MessageList.js";
+export type { MessageListProps, MessageListUi } from "./ui/MessageList.js";
 
 export { ChatComposer } from "./ui/ChatComposer.js";
-export type { ChatComposerProps } from "./ui/ChatComposer.js";
+export type { ChatComposerProps, ChatComposerUi } from "./ui/ChatComposer.js";
 
 export type {
   ChatMessage,

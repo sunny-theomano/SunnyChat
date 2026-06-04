@@ -1,10 +1,12 @@
 import { useEffect, useRef } from "react";
-import type { ReactNode } from "react";
+import type { CSSProperties, ReactNode } from "react";
 import { useChatSession } from "../react/useChatSession.js";
 import type { UseChatSessionConfig } from "../react/useChatSession.js";
 import type { ChatMessage } from "../core/types.js";
 import { ChatComposer } from "./ChatComposer.js";
+import type { ChatComposerUi } from "./ChatComposer.js";
 import { MessageList } from "./MessageList.js";
+import type { MessageListUi } from "./MessageList.js";
 
 const ROOT = "sunny-chat";
 
@@ -167,6 +169,14 @@ function injectDefaultStylesOnce() {
   document.head.appendChild(el);
 }
 
+/** Optional layout/styling for the built-in message list + composer (ignored when you fully replace those via render props). */
+export type SunnyChatUi = {
+  /** Applied to the outer `.sunny-chat` wrapper (e.g. CSS variables). */
+  rootStyle?: CSSProperties;
+  messages?: MessageListUi;
+  composer?: ChatComposerUi;
+};
+
 export type SunnyChatProps = UseChatSessionConfig & {
   title?: string;
   launcherLabel?: string;
@@ -174,12 +184,16 @@ export type SunnyChatProps = UseChatSessionConfig & {
   className?: string;
   /** Inject default FAB + panel chrome. Default true. */
   defaultChrome?: boolean;
+  /** Class names, labels, and small render hooks for the default message list + composer. */
+  ui?: SunnyChatUi;
   renderHeader?: (ctx: {
     title: string;
     onClose: () => void;
   }) => ReactNode;
   renderLoading?: () => ReactNode;
   renderAssistantContent?: (text: string) => ReactNode;
+  /** User (sent) bubble body; default is plain text. */
+  renderUserContent?: (text: string) => ReactNode;
   renderMessageList?: (messages: ChatMessage[]) => ReactNode;
   renderComposer?: (ctx: {
     value: string;
@@ -197,9 +211,11 @@ export function SunnyChat(props: SunnyChatProps) {
     composerPlaceholder,
     className,
     defaultChrome = true,
+    ui,
     renderHeader,
     renderLoading,
     renderAssistantContent,
+    renderUserContent,
     renderMessageList,
     renderComposer,
     ...sessionCfg
@@ -247,6 +263,8 @@ export function SunnyChat(props: SunnyChatProps) {
           <MessageList
             messages={chat.messages}
             renderAssistantContent={renderAssistantContent}
+            renderUserContent={renderUserContent}
+            ui={ui?.messages}
           />
         )}
       </div>
@@ -266,6 +284,7 @@ export function SunnyChat(props: SunnyChatProps) {
           disabled={chat.loading}
           placeholder={composerPlaceholder}
           slotBefore={quickSlot}
+          ui={ui?.composer}
         />
       )}
     </>
@@ -273,14 +292,20 @@ export function SunnyChat(props: SunnyChatProps) {
 
   if (!defaultChrome) {
     return (
-      <div className={[ROOT, className].filter(Boolean).join(" ")}>
+      <div
+        className={[ROOT, className].filter(Boolean).join(" ")}
+        style={ui?.rootStyle}
+      >
         {panelBody}
       </div>
     );
   }
 
   return (
-    <div className={[ROOT, className].filter(Boolean).join(" ")}>
+    <div
+      className={[ROOT, className].filter(Boolean).join(" ")}
+      style={ui?.rootStyle}
+    >
       {!chat.isOpen && (
         <button
           type="button"

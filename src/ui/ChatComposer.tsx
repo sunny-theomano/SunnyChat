@@ -1,6 +1,30 @@
-import type { FormEvent, KeyboardEvent, ReactNode } from "react";
+import type {
+  FormEvent,
+  KeyboardEvent,
+  ReactNode,
+  TextareaHTMLAttributes,
+} from "react";
 
 const ROOT = "sunny-chat";
+
+export type ChatComposerUi = {
+  /** Appended to `.sunny-chat__composer` */
+  formClassName?: string;
+  /** Appended to `.sunny-chat__composerRow` */
+  rowClassName?: string;
+  /** Appended to `.sunny-chat__input` */
+  inputClassName?: string;
+  /** Appended to `.sunny-chat__send` */
+  sendButtonClassName?: string;
+  sendButtonLabel?: string;
+  /** Merged onto the textarea; `value` / `disabled` are owned by the library. */
+  inputProps?: Omit<
+    TextareaHTMLAttributes<HTMLTextAreaElement>,
+    "value" | "disabled"
+  >;
+  /** Replace the default submit button; call `send` to submit the current value. */
+  renderSendButton?: (ctx: { disabled: boolean; send: () => void }) => ReactNode;
+};
 
 export type ChatComposerProps = {
   value: string;
@@ -10,7 +34,12 @@ export type ChatComposerProps = {
   placeholder?: string;
   /** Slot above textarea (e.g. quick replies). */
   slotBefore?: ReactNode;
+  ui?: ChatComposerUi;
 };
+
+function cx(...parts: (string | undefined)[]) {
+  return parts.filter(Boolean).join(" ");
+}
 
 export function ChatComposer({
   value,
@@ -19,8 +48,19 @@ export function ChatComposer({
   disabled,
   placeholder = "Message…",
   slotBefore,
+  ui,
 }: ChatComposerProps) {
+  const { inputProps, renderSendButton, sendButtonLabel = "Send" } = ui ?? {};
+  const {
+    className: inputPropsClassName,
+    onChange: inputPropsOnChange,
+    onKeyDown: inputPropsOnKeyDown,
+    ...restInputProps
+  } = inputProps ?? {};
+
   const onKeyDown = (e: KeyboardEvent<HTMLTextAreaElement>) => {
+    inputPropsOnKeyDown?.(e);
+    if (e.defaultPrevented) return;
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
       if (!disabled && value.trim()) onSend();
@@ -32,27 +72,47 @@ export function ChatComposer({
     if (!disabled && value.trim()) onSend();
   };
 
+  const sendDisabled = Boolean(disabled || !value.trim());
+  const triggerSend = () => {
+    if (!sendDisabled) onSend();
+  };
+
   return (
-    <form className={`${ROOT}__composer`} onSubmit={onSubmit}>
+    <form
+      className={cx(`${ROOT}__composer`, ui?.formClassName)}
+      onSubmit={onSubmit}
+    >
       {slotBefore}
-      <div className={`${ROOT}__composerRow`}>
+      <div className={cx(`${ROOT}__composerRow`, ui?.rowClassName)}>
         <textarea
-          className={`${ROOT}__input`}
-          rows={2}
+          {...restInputProps}
+          className={cx(
+            `${ROOT}__input`,
+            ui?.inputClassName,
+            inputPropsClassName,
+          )}
+          rows={restInputProps.rows ?? 2}
           value={value}
           placeholder={placeholder}
           disabled={disabled}
-          onChange={(e) => onChange(e.target.value)}
+          onChange={(e) => {
+            inputPropsOnChange?.(e);
+            onChange(e.target.value);
+          }}
           onKeyDown={onKeyDown}
-          aria-label="Chat message"
+          aria-label={restInputProps["aria-label"] ?? "Chat message"}
         />
-        <button
-          type="submit"
-          className={`${ROOT}__send`}
-          disabled={disabled || !value.trim()}
-        >
-          Send
-        </button>
+        {renderSendButton ? (
+          renderSendButton({ disabled: sendDisabled, send: triggerSend })
+        ) : (
+          <button
+            type="submit"
+            className={cx(`${ROOT}__send`, ui?.sendButtonClassName)}
+            disabled={sendDisabled}
+          >
+            {sendButtonLabel}
+          </button>
+        )}
       </div>
     </form>
   );

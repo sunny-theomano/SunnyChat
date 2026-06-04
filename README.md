@@ -119,6 +119,14 @@ Default styles inject once and honor CSS variables on `.sunny-chat`, for example
 }
 ```
 
+You can also pass `ui.rootStyle` for inline CSS variables, and `ui.messages` / `ui.composer` for extra class names on the default message list and input row (see TypeScript types `SunnyChatUi`, `MessageListUi`, `ChatComposerUi`). Those `ui` sections apply only when you are **not** overriding the same area with `renderMessageList` or `renderComposer`.
+
+### Custom bubble and composer UI
+
+- **`renderUserContent` / `renderAssistantContent`** — replace the **body** inside the default bubbles for sent vs received messages (layout/alignment and bubble chrome stay the default unless you use `renderMessageList` or `ui.messages.*ClassName` to style them).
+- **`ui.composer`** — `sendButtonLabel`, extra classes on the form / textarea / send button, `inputProps` merged onto the textarea, or `renderSendButton({ disabled, send })` for a fully custom send control.
+- **`renderComposer` / `renderMessageList`** — still the escape hatch to replace the whole composer or transcript while keeping `useChatSession` behavior via `SunnyChat`.
+
 ## Assistant content (markdown + XSS)
 
 Default bubbles run **marked** → **DOMPurify** and open links in a new tab. Override with `renderAssistantContent` on `MessageList` / `SunnyChat` for strict React-only rendering.
