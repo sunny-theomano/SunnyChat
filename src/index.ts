@@ -1,0 +1,35 @@
+export { useChatSession } from "./react/useChatSession.js";
+export type {
+  UseChatSessionConfig,
+  SendMessageOptions,
+} from "./react/useChatSession.js";
+
+export { SunnyChat } from "./ui/SunnyChat.js";
+export type { SunnyChatProps } from "./ui/SunnyChat.js";
+
+export { MessageList } from "./ui/MessageList.js";
+export type { MessageListProps } from "./ui/MessageList.js";
+
+export { ChatComposer } from "./ui/ChatComposer.js";
+export type { ChatComposerProps } from "./ui/ChatComposer.js";
+
+export type {
+  ChatMessage,
+  ChatRole,
+  ChatAnalyticsEvent,
+  ChatAnalyticsContext,
+  ParseChunkResult,
+  StreamEventPayload,
+} from "./core/types.js";
+
+export { generateAnonymousId, buildSessionId } from "./core/session.js";
+export { normalizeHistoryMessages, hasUserMessage } from "./core/history.js";
+export { defaultParseChunk, extractJsonBlocks } from "./core/parseSse.js";
+export {
+  streamChatResponse,
+  resolveChatUrl,
+  resolveHistoryUrl,
+} from "./core/streamChat.js";
+export type { StreamChatBody } from "./core/streamChat.js";
+
+export { useMarkedHtml } from "./ui/markdown.js";
