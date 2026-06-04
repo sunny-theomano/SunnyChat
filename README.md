@@ -76,7 +76,7 @@ export function App() {
 
 | Prop | Purpose |
 |------|--------|
-| `baseUrl` **or** `streamUrl` | `POST …/chat` (or full chat URL) |
+| `baseUrl` | API origin only (no `/chat` suffix). The library uses `POST ${baseUrl}/chat` and `GET ${baseUrl}/chat/history/:userId`. |
 | `teamName` | Backend routing (e.g. `generac-team`, `ritz-team`) |
 | `sessionIdSuffix` | Thread namespace per surface (e.g. `_proposal`, `_generac_offer`) |
 | `getUserId` | Stable user id; library generates anonymous id if null |
@@ -84,7 +84,6 @@ export function App() {
 
 ### Optional
 
-- `historyUrl` — override `GET` URL (default: `${baseUrl}/chat/history/:userId`)
 - `quickQuestions` — chips until first interaction (per doc)
 - `sanitizeHistory` / `filterUiMessages` / `shouldSkipAutoSend` — loader / hidden-prompt flows
 - `parseChunk` — extend SSE JSON handling beyond `TeamRunContent` / `TeamRunCompleted`
@@ -100,7 +99,7 @@ Use your own design system while keeping all transport and merge behavior:
 import { useChatSession } from "sunny-chat";
 
 const chat = useChatSession({
-  streamUrl: "https://api.example.com/chat",
+  baseUrl: "https://api.example.com",
   teamName: "ritz-team",
   sessionIdSuffix: "_proposal",
   getUserId: () => user?.id ?? null,
@@ -110,7 +109,26 @@ const chat = useChatSession({
 
 ## Theming (default UI)
 
-Default styles inject once and honor CSS variables on `.sunny-chat`, for example:
+Default styles inject once. Target the root with **`sunny-chat`** (the `ROOT` constant in source): the outer wrapper is always `class="sunny-chat"` plus any `className` you pass on `SunnyChat`.
+
+### CSS variables (on `.sunny-chat`)
+
+These are read by the injected theme; override them in your own stylesheet:
+
+| Variable | Used for |
+|----------|-----------|
+| `--chat-user-bg` | User bubble background |
+| `--chat-user-fg` | User bubble text |
+| `--chat-assistant-bg` | Assistant bubble background |
+| `--chat-assistant-fg` | Assistant bubble text |
+| `--chat-radius` | Corners (panel, bubbles, inputs) |
+| `--chat-panel-bg` | Panel background |
+| `--chat-panel-border` | Panel / header / composer borders |
+| `--chat-fab-bg` | FAB and send button background |
+| `--chat-fab-fg` | FAB and send button text |
+| `--chat-shadow` | FAB and panel shadow |
+
+Example:
 
 ```css
 .sunny-chat {
@@ -119,13 +137,61 @@ Default styles inject once and honor CSS variables on `.sunny-chat`, for example
 }
 ```
 
-You can also pass `ui.rootStyle` for inline CSS variables, and `ui.messages` / `ui.composer` for extra class names on the default message list and input row (see TypeScript types `SunnyChatUi`, `MessageListUi`, `ChatComposerUi`). Those `ui` sections apply only when you are **not** overriding the same area with `renderMessageList` or `renderComposer`.
+You can also set the same variables inline via `ui.rootStyle` (e.g. `{ "--chat-user-bg": "#059669" } as React.CSSProperties`).
+
+### Default class names (override in CSS)
+
+All classes are prefixed with **`sunny-chat__`**. Use them in your app CSS after the default style tag loads (or rely on cascade if your rules come later).
+
+| Class | Element / role |
+|-------|------------------|
+| `.sunny-chat` | Root wrapper (`SunnyChat` `className` is appended here) |
+| `.sunny-chat__fab` | Floating “open chat” launcher (`defaultChrome` only) |
+| `.sunny-chat__backdrop` | Full-screen dimmed overlay behind the panel |
+| `.sunny-chat__panel` | Fixed chat panel shell |
+| `.sunny-chat__header` | Default title bar (skipped if you pass `renderHeader`) |
+| `.sunny-chat__close` | Default close control in the header |
+| `.sunny-chat__body` | Scrollable transcript region |
+| `.sunny-chat__skeleton` | “Loading conversation…” placeholder |
+| `.sunny-chat__messages` | Column of messages |
+| `.sunny-chat__row` | Single message row |
+| `.sunny-chat__row--user` | User row (align end); `data-role="user"` |
+| `.sunny-chat__row--assistant` | Assistant row (align start); `data-role="assistant"` |
+| `.sunny-chat__bubble` | Bubble chrome around one message |
+| `.sunny-chat__text` | Default plain-text body for **user** messages |
+| `.sunny-chat__md` | Default assistant HTML (markdown) body |
+| `.sunny-chat__quick` | Quick-reply chips row above the composer |
+| `.sunny-chat__quickBtn` | One quick-reply chip |
+| `.sunny-chat__composer` | Composer `<form>` |
+| `.sunny-chat__composerRow` | Flex row: textarea + send |
+| `.sunny-chat__input` | Message `<textarea>` |
+| `.sunny-chat__send` | Default submit button |
+
+### Extra classes via `ui` (no global CSS required)
+
+`SunnyChat` forwards optional class names so you can use utility frameworks (Tailwind, etc.) without writing selectors for every inner node:
+
+| `ui` field | Appended to |
+|------------|-------------|
+| `ui.messages.className` | `.sunny-chat__messages` |
+| `ui.messages.userRowClassName` | `.sunny-chat__row.sunny-chat__row--user` |
+| `ui.messages.assistantRowClassName` | `.sunny-chat__row.sunny-chat__row--assistant` |
+| `ui.messages.userBubbleClassName` | user row `.sunny-chat__bubble` |
+| `ui.messages.assistantBubbleClassName` | assistant row `.sunny-chat__bubble` |
+| `ui.composer.formClassName` | `.sunny-chat__composer` |
+| `ui.composer.rowClassName` | `.sunny-chat__composerRow` |
+| `ui.composer.inputClassName` | `.sunny-chat__input` |
+| `ui.composer.sendButtonClassName` | `.sunny-chat__send` (ignored if `renderSendButton` is set) |
+
+`ui.messages` / `ui.composer` are ignored when you replace those trees with `renderMessageList` or `renderComposer`. Custom `renderHeader` removes the default `.sunny-chat__header` / `__close` markup (style those in your own header instead).
 
 ### Custom bubble and composer UI
 
 - **`renderUserContent` / `renderAssistantContent`** — replace the **body** inside the default bubbles for sent vs received messages (layout/alignment and bubble chrome stay the default unless you use `renderMessageList` or `ui.messages.*ClassName` to style them).
 - **`ui.composer`** — `sendButtonLabel`, extra classes on the form / textarea / send button, `inputProps` merged onto the textarea, or `renderSendButton({ disabled, send })` for a fully custom send control.
 - **`renderComposer` / `renderMessageList`** — still the escape hatch to replace the whole composer or transcript while keeping `useChatSession` behavior via `SunnyChat`.
+
+TypeScript: `SunnyChatUi`, `MessageListUi`, `ChatComposerUi` in the package exports.
 
 ## Assistant content (markdown + XSS)
 

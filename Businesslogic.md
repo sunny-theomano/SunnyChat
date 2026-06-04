@@ -58,7 +58,7 @@ It is derived from the current implementation in:
 | `session_id` | string | yes | **Namespace** for this thread (see §5). |
 | `team_name` | string | yes | **Routes agent / prompt** on backend (e.g. `ritz-team`, `generac-team`). |
 
-**Base URL:** today `REACT_APP_V3_BASE_URL`; the library should accept `baseUrl` or full `streamUrl` as config.
+**Base URL:** today `REACT_APP_V3_BASE_URL`; the library takes a single `baseUrl` (origin) and derives `POST …/chat` and `GET …/chat/history/:userId` internally.
 
 ### 3.2 Stream protocol (SSE-style chunks)
 
@@ -245,8 +245,7 @@ Host maps events to PostHog / GA4 / etc.
 
 ```ts
 type UseChatSessionConfig = {
-  streamUrl: string;                    // or baseUrl + "/chat"
-  historyUrl?: (userId: string) => string;
+  baseUrl: string;                       // API origin; package appends /chat and /chat/history/:userId
   teamName: string;
   sessionIdSuffix: string;
   getUserId: () => string | null;
@@ -287,7 +286,7 @@ function useChatSession(cfg: UseChatSessionConfig): {
 
 ## 15. Consumer checklist (new repo)
 
-1. [ ] Provide `streamUrl` / `baseUrl` and `teamName`.
+1. [ ] Provide `baseUrl` (API origin) and `teamName`.
 2. [ ] Define `sessionIdSuffix` per surface (checkout, marketing, logged-in app).
 3. [ ] Wire `getUserId()` (URL param, JWT claim, etc.).
 4. [ ] Implement UI with slots or headless hook only.

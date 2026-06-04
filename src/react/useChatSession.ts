@@ -27,11 +27,12 @@ const DEFAULT_MONITOR = true;
 export type UseChatSessionConfig = {
   /** If true, panel starts open (headless / embedded modes). */
   initialOpen?: boolean;
-  /** Full POST URL, e.g. `https://api.example.com/chat` */
-  streamUrl?: string;
-  /** If set, chat POST goes to `${baseUrl}/chat` and history to `${baseUrl}/chat/history/:userId` unless `historyUrl` overrides. */
-  baseUrl?: string;
-  historyUrl?: (userId: string) => string;
+  /**
+   * API origin only (no `/chat` suffix). The package calls:
+   * - `POST ${baseUrl}/chat` for streaming messages
+   * - `GET ${baseUrl}/chat/history/:userId` for history
+   */
+  baseUrl: string;
   teamName: string;
   sessionIdSuffix: string;
   getUserId: () => string | null;
@@ -102,10 +103,7 @@ export function useChatSession(cfg: UseChatSessionConfig) {
     [sessionId, cfg.sessionIdSuffix, cfg.teamName]
   );
 
-  const postUrl = useMemo(
-    () => resolveChatUrl({ baseUrl: cfg.baseUrl, streamUrl: cfg.streamUrl }),
-    [cfg.baseUrl, cfg.streamUrl]
-  );
+  const postUrl = useMemo(() => resolveChatUrl(cfg.baseUrl), [cfg.baseUrl]);
 
   const abort = useCallback(() => {
     abortRef.current?.abort();
@@ -118,16 +116,7 @@ export function useChatSession(cfg: UseChatSessionConfig) {
   }, []);
 
   const loadHistory = useCallback(async () => {
-    const historyEndpoint = resolveHistoryUrl(
-      { baseUrl: cfg.baseUrl, historyUrl: cfg.historyUrl },
-      effectiveUserId
-    );
-    if (!historyEndpoint) {
-      setMessages([{ role: "assistant", content: cfg.greetingAssistantText }]);
-      setHistoryInitialized(true);
-      setIsLoadingHistory(false);
-      return;
-    }
+    const historyEndpoint = resolveHistoryUrl(cfg.baseUrl, effectiveUserId);
 
     setIsLoadingHistory(true);
     try {

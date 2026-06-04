@@ -74,23 +74,14 @@ export async function streamChatResponse(params: StreamChatParams): Promise<void
   }
 }
 
-export function resolveChatUrl(config: { baseUrl?: string; streamUrl?: string }): string {
-  if (config.streamUrl) return config.streamUrl;
-  if (config.baseUrl) {
-    const base = config.baseUrl.replace(/\/$/, "");
-    return `${base}/chat`;
-  }
-  throw new Error("sunny-chat: provide `streamUrl` or `baseUrl`");
+/** `POST ${normalize(baseUrl)}/chat` */
+export function resolveChatUrl(baseUrl: string): string {
+  const base = baseUrl.replace(/\/$/, "");
+  return `${base}/chat`;
 }
 
-export function resolveHistoryUrl(
-  config: { baseUrl?: string; historyUrl?: (userId: string) => string },
-  userId: string
-): string | null {
-  if (config.historyUrl) return config.historyUrl(userId);
-  if (config.baseUrl) {
-    const base = config.baseUrl.replace(/\/$/, "");
-    return `${base}/chat/history/${encodeURIComponent(userId)}`;
-  }
-  return null;
+/** `GET ${normalize(baseUrl)}/chat/history/:userId` */
+export function resolveHistoryUrl(baseUrl: string, userId: string): string {
+  const base = baseUrl.replace(/\/$/, "");
+  return `${base}/chat/history/${encodeURIComponent(userId)}`;
 }
