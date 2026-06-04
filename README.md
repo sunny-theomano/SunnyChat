@@ -2,81 +2,47 @@
 
 React chatbox library implementing the streaming chat contract described in `Businesslogic.md`: **SSE parsing, session IDs, history merge rules, abort, quick replies, analytics callbacks, and optional default UI** — so your app only supplies **configuration** (URLs, `teamName`, `sessionIdSuffix`, `getUserId`, copy).
 
-## Install (GitHub only — no npm registry)
+## Install (GitHub only — no npmjs.com)
 
-This library is meant to be consumed **from your GitHub repo**, not from npmjs.
+Source: [github.com/sunny-theomano/SunnyChat](https://github.com/sunny-theomano/SunnyChat).
 
-1. Push this repo to GitHub (default metadata assumes `https://github.com/TheoMano/SunnyChat` — edit `repository` / `bugs` in this package’s `package.json` if your fork lives elsewhere).
-2. In the **host app**, add a git dependency pointing at that repo (branch or tag optional):
+1. In your app’s `package.json`, depend on the repo (pick **one** form):
 
-**npm / pnpm / Bun**
+**Shorthand (public repo)**
 
 ```json
 {
   "dependencies": {
-    "sunny-chat": "github:TheoMano/SunnyChat#main"
+    "sunny-chat": "github:sunny-theomano/SunnyChat#main"
   }
 }
 ```
 
-Then run `npm install` (or `pnpm install`, etc.).
+Use `main` or another branch to match GitHub. Pin a tag or commit if you want: `github:sunny-theomano/SunnyChat#v0.1.0` or `github:sunny-theomano/SunnyChat#abc1234`.
 
-**Exact commit or tag (recommended for stability)**
-
-```json
-"sunny-chat": "github:TheoMano/SunnyChat#v0.1.0"
-```
-
-**HTTPS URL (works everywhere)**
+**Full git URL (private repo + auth your machine already has)**
 
 ```json
-"sunny-chat": "git+https://github.com/TheoMano/SunnyChat.git#main"
+{
+  "dependencies": {
+    "sunny-chat": "git+https://github.com/sunny-theomano/SunnyChat.git#main"
+  }
+}
 ```
 
-### Build on install
+2. Install:
 
-`dist/` is not committed; the package defines `"prepare": "npm run build"`. When someone installs from Git, npm runs `prepare` and produces `dist/` using `tsup` + `typescript` from `devDependencies`.
+```bash
+npm install
+```
 
-If installs skip lifecycle scripts (`npm install --ignore-scripts`), run `npm run build` inside `node_modules/sunny-chat` once, or re-install without ignoring scripts.
+On install, npm runs the **`prepare`** script in this package, which runs **`npm run build`** and generates `dist/`. You do **not** need to publish to the npm registry.
 
-Peer: `react` ≥ 18 (and `react-dom` if you use the default UI in the browser).
+**Peer dependency:** `react` ≥ 18 (and `react-dom` if you use the default UI in the browser).
 
-## Testing (local playground)
+### Optional: publish to npm later
 
-This repo includes a **Vite + React** app under `examples/playground` that depends on the library via `file:../..`.
-
-1. From the **repo root**, build the library (once, or after you change library source):
-
-   ```bash
-   npm run build
-   ```
-
-2. Configure API base URL for the playground:
-
-   ```bash
-   cp examples/playground/.env.example examples/playground/.env
-   ```
-
-   Edit `examples/playground/.env` and set `VITE_API_BASE` to your real backend root (the same host you use for `POST /chat` and `GET /chat/history/...` in production).
-
-3. Install playground deps and start the dev server:
-
-   ```bash
-   npm install --prefix examples/playground
-   npm run dev --prefix examples/playground
-   ```
-
-   Or from the repo root in one shot (build + install playground + open Vite):
-
-   ```bash
-   npm run playground
-   ```
-
-4. In the browser, click **Try chat**, send a message, and confirm streaming + history.
-
-**CORS:** the playground origin is usually `http://localhost:5173`. Your API must allow that origin (or use a Vite `server.proxy` in `examples/playground/vite.config.ts` to proxy `/chat` to the API).
-
-**Without a backend:** you will not get real replies; the UI still loads so you can check layout and composer behavior once `VITE_API_BASE` is set (failed requests show the library’s connection fallback on the assistant bubble).
+If you ever want `npm install sunny-chat` from the public registry, you can still publish the same repo to npm separately; the GitHub flow above does not require it.
 
 ## Zero–business-logic usage
 

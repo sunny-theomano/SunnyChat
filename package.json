@@ -3,14 +3,15 @@
   "version": "0.1.0",
   "description": "Streaming chat widget for React — transport, history merge, SSE parsing, and optional UI (Sunny-style contract).",
   "license": "MIT",
-  "type": "module",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/TheoMano/SunnyChat.git"
+    "url": "git+https://github.com/sunny-theomano/SunnyChat.git"
   },
   "bugs": {
-    "url": "https://github.com/TheoMano/SunnyChat/issues"
+    "url": "https://github.com/sunny-theomano/SunnyChat/issues"
   },
+  "homepage": "https://github.com/sunny-theomano/SunnyChat#readme",
+  "type": "module",
   "main": "./dist/index.js",
   "module": "./dist/index.js",
   "types": "./dist/index.d.ts",
@@ -28,8 +29,7 @@
     "build": "tsup",
     "dev": "tsup --watch",
     "typecheck": "tsc --noEmit",
-    "prepare": "npm run build",
-    "playground": "npm run build && npm install --prefix examples/playground && npm run dev --prefix examples/playground"
+    "prepare": "npm run build"
   },
   "peerDependencies": {
     "react": ">=18.0.0",
