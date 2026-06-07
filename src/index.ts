@@ -7,6 +7,16 @@ export type {
 export { SunnyChat } from "./ui/SunnyChat.js";
 export type { SunnyChatProps, SunnyChatUi } from "./ui/SunnyChat.js";
 
+export {
+  SunnyChatAiElements,
+  sunnyChatAiElementsRenderers,
+} from "./ui/sunnyChatAiElements.js";
+export type {
+  SunnyChatAiElementsProps,
+  SunnyChatAiElementsRenderersOptions,
+  SunnyChatAiElementsSlots,
+} from "./ui/sunnyChatAiElements.js";
+
 export { MessageList } from "./ui/MessageList.js";
 export type { MessageListProps, MessageListUi } from "./ui/MessageList.js";
 

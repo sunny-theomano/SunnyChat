@@ -91,6 +91,67 @@ export function App() {
 - `initialOpen` — open panel without FAB (e.g. embedded concierge)
 - `defaultChrome={false}` — render thread + composer only; you provide shell / FAB
 
+## Vercel AI Elements
+
+Use [Vercel AI Elements](https://elements.ai-sdk.dev) for the transcript and prompt UI while keeping Sunny transport, history, and quick replies. In your app, add AI Elements the usual way (Tailwind + shadcn/ui, then e.g. `npx ai-elements@latest` or the registry URLs from the docs) so you have components such as `conversation`, `message`, and `prompt-input`.
+
+Then pass those components into **`SunnyChatAiElements`**:
+
+```tsx
+import {
+  Conversation,
+  ConversationContent,
+  ConversationScrollButton,
+} from "@/components/ai-elements/conversation";
+import {
+  Message,
+  MessageContent,
+  MessageResponse,
+} from "@/components/ai-elements/message";
+import {
+  PromptInput,
+  PromptInputBody,
+  PromptInputTextarea,
+  PromptInputFooter,
+  PromptInputSubmit,
+} from "@/components/ai-elements/prompt-input";
+import { SunnyChatAiElements } from "sunny-chat";
+
+const aiElements = {
+  Conversation,
+  ConversationContent,
+  Message,
+  MessageContent,
+  MessageResponse,
+  PromptInput,
+  PromptInputBody,
+  PromptInputTextarea,
+  PromptInputFooter,
+  PromptInputSubmit,
+  ConversationScrollButton,
+};
+
+export function App() {
+  return (
+    <SunnyChatAiElements
+      aiElements={aiElements}
+      baseUrl={import.meta.env.VITE_API_BASE}
+      teamName="generac-team"
+      sessionIdSuffix="_generac_offer"
+      getUserId={() => null}
+      greetingAssistantText="Hi! How can I help?"
+      composerPlaceholder="Message…"
+    />
+  );
+}
+```
+
+Optional **`aiElementsOptions`**: `conversationClassName`, `promptInputClassName`, `markdownUserMessages` (default `true` — user bubbles use `MessageResponse` / markdown like assistant).
+
+If you prefer to memoize render props yourself, import **`sunnyChatAiElementsRenderers`** and spread the result onto **`SunnyChat`** as `renderMessageList` and `renderComposer`.
+
+**Composer API:** custom `renderComposer` callbacks receive **`sendText(text)`** so uncontrolled inputs (AI Elements `PromptInput`) can send without syncing React state to `value` first. They also receive **`composerPlaceholder`**.
+
 ## Headless (`useChatSession`)
 
 Use your own design system while keeping all transport and merge behavior:
@@ -189,7 +250,7 @@ All classes are prefixed with **`sunny-chat__`**. Use them in your app CSS after
 
 - **`renderUserContent` / `renderAssistantContent`** — replace the **body** inside the default bubbles for sent vs received messages (layout/alignment and bubble chrome stay the default unless you use `renderMessageList` or `ui.messages.*ClassName` to style them).
 - **`ui.composer`** — `sendButtonLabel`, extra classes on the form / textarea / send button, `inputProps` merged onto the textarea, or `renderSendButton({ disabled, send })` for a fully custom send control.
-- **`renderComposer` / `renderMessageList`** — still the escape hatch to replace the whole composer or transcript while keeping `useChatSession` behavior via `SunnyChat`.
+- **`renderComposer` / `renderMessageList`** — still the escape hatch to replace the whole composer or transcript while keeping `useChatSession` behavior via `SunnyChat`. The composer context includes **`sendText(message)`** for uncontrolled UIs (e.g. Vercel AI Elements `PromptInput`) and **`composerPlaceholder`**.
 
 TypeScript: `SunnyChatUi`, `MessageListUi`, `ChatComposerUi` in the package exports.
 

@@ -83,6 +83,9 @@ const defaultCss = `
 }
 .${ROOT}__body {
   flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
   overflow: auto;
   padding: 12px;
 }
@@ -199,8 +202,11 @@ export type SunnyChatProps = UseChatSessionConfig & {
     value: string;
     setValue: (v: string) => void;
     send: () => void;
+    /** Sends `text` without reading the controlled input (for uncontrolled UIs such as Vercel AI Elements `PromptInput`). */
+    sendText: (text: string) => void;
     loading: boolean;
     quickSlot: ReactNode;
+    composerPlaceholder?: string;
   }) => ReactNode;
 };
 
@@ -229,10 +235,11 @@ export function SunnyChat(props: SunnyChatProps) {
   }, [props.defaultChrome]);
 
   useEffect(() => {
+    if (renderMessageList) return;
     const el = scrollRef.current;
     if (!el) return;
     el.scrollTop = el.scrollHeight;
-  }, [chat.messages, chat.loading, chat.isOpen]);
+  }, [chat.messages, chat.loading, chat.isOpen, renderMessageList]);
 
   const quickSlot =
     chat.showQuickReplies && chat.quickQuestions.length > 0 ? (
@@ -273,8 +280,10 @@ export function SunnyChat(props: SunnyChatProps) {
           value: chat.input,
           setValue: chat.setInput,
           send: () => void chat.sendMessage(),
+          sendText: (text) => void chat.sendMessage(text),
           loading: chat.loading,
           quickSlot,
+          composerPlaceholder,
         })
       ) : (
         <ChatComposer
