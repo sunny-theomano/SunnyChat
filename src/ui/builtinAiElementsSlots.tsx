@@ -1,0 +1,477 @@
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
+import type { FormEvent, ReactNode } from "react";
+import { useMarkedHtml } from "./markdown.js";
+import { SunnyChatAiElements } from "./sunnyChatAiElements.js";
+import type {
+  SunnyChatAiElementsProps,
+  SunnyChatAiElementsSlots,
+} from "./sunnyChatAiElements.js";
+
+const ROOT = "sunny-chat-ael";
+
+const STYLE_ID = "sunny-chat-builtin-ai-elements-css";
+
+const builtinCss = `
+.${ROOT}__conversation {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  position: relative;
+}
+.${ROOT}__scroll {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 8px 4px 12px;
+}
+.${ROOT}__scrollBtn {
+  position: absolute;
+  bottom: 8px;
+  right: 12px;
+  z-index: 2;
+  width: 36px;
+  height: 36px;
+  border-radius: 999px;
+  border: 1px solid var(--chat-panel-border, #e4e4e7);
+  background: var(--chat-panel-bg, #fff);
+  box-shadow: 0 4px 14px rgba(15, 23, 42, 0.12);
+  cursor: pointer;
+  font-size: 16px;
+  line-height: 1;
+  color: #3f3f46;
+}
+.${ROOT}__scrollBtn:hover {
+  background: #fafafa;
+}
+.${ROOT}__msgRow {
+  display: flex;
+  margin-bottom: 10px;
+}
+.${ROOT}__msgRow--user {
+  justify-content: flex-end;
+}
+.${ROOT}__msgRow--assistant {
+  justify-content: flex-start;
+}
+.${ROOT}__bubble {
+  max-width: 88%;
+  padding: 10px 12px;
+  border-radius: 12px;
+  word-break: break-word;
+  font-size: 14px;
+  line-height: 1.45;
+}
+.${ROOT}__msgRow--user .${ROOT}__bubble {
+  background: var(--chat-user-bg, #2563eb);
+  color: var(--chat-user-fg, #fff);
+}
+.${ROOT}__msgRow--assistant .${ROOT}__bubble {
+  background: var(--chat-assistant-bg, #f4f4f5);
+  color: var(--chat-assistant-fg, #18181b);
+}
+.${ROOT}__md p { margin: 0 0 0.5em; }
+.${ROOT}__md p:last-child { margin-bottom: 0; }
+.${ROOT}__md a { color: inherit; text-decoration: underline; }
+.${ROOT}__form {
+  border-top: 1px solid var(--chat-panel-border, #e4e4e7);
+  padding: 10px;
+  background: #fafafa;
+}
+.${ROOT}__body {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+.${ROOT}__textarea {
+  width: 100%;
+  min-height: 44px;
+  max-height: 160px;
+  resize: vertical;
+  border: 1px solid var(--chat-panel-border, #e4e4e7);
+  border-radius: 10px;
+  padding: 10px 12px;
+  font: inherit;
+  font-size: 14px;
+  background: #fff;
+  box-sizing: border-box;
+}
+.${ROOT}__textarea:focus {
+  outline: 2px solid rgba(37, 99, 235, 0.35);
+  outline-offset: 0;
+}
+.${ROOT}__footer {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 8px;
+}
+.${ROOT}__submit {
+  border: none;
+  border-radius: 10px;
+  padding: 10px 14px;
+  cursor: pointer;
+  background: var(--chat-fab-bg, #2563eb);
+  color: var(--chat-fab-fg, #fff);
+  font-weight: 600;
+  font-size: 14px;
+  min-width: 44px;
+}
+.${ROOT}__submit:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+.${ROOT}__submitDot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: currentColor;
+  animation: ${ROOT}-pulse 0.9s ease-in-out infinite alternate;
+}
+@keyframes ${ROOT}-pulse {
+  from { opacity: 0.35; transform: scale(0.85); }
+  to { opacity: 1; transform: scale(1); }
+}
+`;
+
+function injectBuiltinAiElementsStylesOnce() {
+  if (typeof document === "undefined") return;
+  if (document.getElementById(STYLE_ID)) return;
+  const el = document.createElement("style");
+  el.id = STYLE_ID;
+  el.textContent = builtinCss;
+  document.head.appendChild(el);
+}
+
+type ScrollCtx = {
+  scrollRef: React.RefObject<HTMLDivElement | null>;
+  atBottom: boolean;
+  checkBottom: () => void;
+  scrollToBottom: () => void;
+  stickToBottomRef: React.MutableRefObject<boolean>;
+};
+
+const ScrollContext = createContext<ScrollCtx | null>(null);
+
+function BuiltinConversation({
+  className,
+  children,
+  role,
+}: {
+  className?: string;
+  children?: ReactNode;
+  role?: string;
+}) {
+  const scrollRef = useRef<HTMLDivElement | null>(null);
+  const [atBottom, setAtBottom] = useState(true);
+  const stickToBottomRef = useRef(true);
+
+  const checkBottom = useCallback(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+    const gap = el.scrollHeight - el.scrollTop - el.clientHeight;
+    const near = gap < 56;
+    stickToBottomRef.current = near;
+    setAtBottom(near);
+  }, []);
+
+  const scrollToBottom = useCallback(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+    el.scrollTo({ top: el.scrollHeight, behavior: "smooth" });
+    stickToBottomRef.current = true;
+    setAtBottom(true);
+  }, []);
+
+  const value = useMemo(
+    () => ({
+      scrollRef,
+      atBottom,
+      checkBottom,
+      scrollToBottom,
+      stickToBottomRef,
+    }),
+    [atBottom, checkBottom, scrollToBottom],
+  );
+
+  return (
+    <ScrollContext.Provider value={value}>
+      <section
+        className={[ROOT + "__conversation", className].filter(Boolean).join(" ")}
+        role={role}
+      >
+        {children}
+      </section>
+    </ScrollContext.Provider>
+  );
+}
+
+function BuiltinConversationContent({
+  className,
+  children,
+}: {
+  className?: string;
+  children?: ReactNode;
+}) {
+  const ctx = useContext(ScrollContext);
+  if (!ctx) {
+    throw new Error("sunny-chat: ConversationContent must be inside Conversation");
+  }
+  const { scrollRef, checkBottom, stickToBottomRef } = ctx;
+
+  useLayoutEffect(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+    if (stickToBottomRef.current) {
+      el.scrollTop = el.scrollHeight;
+    }
+    checkBottom();
+  }, [children, scrollRef, checkBottom, stickToBottomRef]);
+
+  return (
+    <div
+      ref={scrollRef}
+      className={[ROOT + "__scroll", className].filter(Boolean).join(" ")}
+      onScroll={checkBottom}
+    >
+      {children}
+    </div>
+  );
+}
+
+function BuiltinConversationScrollButton({ className }: { className?: string }) {
+  const ctx = useContext(ScrollContext);
+  if (!ctx || ctx.atBottom) return null;
+  return (
+    <button
+      type="button"
+      className={[ROOT + "__scrollBtn", className].filter(Boolean).join(" ")}
+      aria-label="Scroll to latest message"
+      onClick={ctx.scrollToBottom}
+    >
+      ↓
+    </button>
+  );
+}
+
+function BuiltinMessage({
+  from,
+  className,
+  children,
+}: {
+  from: "user" | "assistant";
+  className?: string;
+  children?: ReactNode;
+}) {
+  return (
+    <div
+      className={[
+        ROOT + "__msgRow",
+        from === "user" ? ROOT + "__msgRow--user" : ROOT + "__msgRow--assistant",
+        className,
+      ]
+        .filter(Boolean)
+        .join(" ")}
+      data-from={from}
+    >
+      {children}
+    </div>
+  );
+}
+
+function BuiltinMessageContent({
+  className,
+  children,
+}: {
+  className?: string;
+  children?: ReactNode;
+}) {
+  return (
+    <div className={[ROOT + "__bubble", className].filter(Boolean).join(" ")}>
+      {children}
+    </div>
+  );
+}
+
+function BuiltinMessageResponse({
+  className,
+  children,
+}: {
+  className?: string;
+  children?: ReactNode;
+}) {
+  const text = typeof children === "string" ? children : "";
+  const html = useMarkedHtml(text);
+  return (
+    <div
+      className={[ROOT + "__md", className].filter(Boolean).join(" ")}
+      // eslint-disable-next-line react/no-danger -- mirrors default MessageList; host can swap slots
+      dangerouslySetInnerHTML={{ __html: html }}
+    />
+  );
+}
+
+function BuiltinPromptInput({
+  className,
+  onSubmit,
+  children,
+}: {
+  className?: string;
+  onSubmit: (
+    message: { text: string },
+    event: FormEvent<HTMLFormElement>,
+  ) => void | Promise<void>;
+  children?: ReactNode;
+}) {
+  const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const form = event.currentTarget;
+    const fd = new FormData(form);
+    const raw = fd.get("message");
+    const text = typeof raw === "string" ? raw : "";
+    const result = onSubmit({ text }, event);
+    void Promise.resolve(result).finally(() => {
+      form.reset();
+    });
+  };
+
+  return (
+    <form
+      className={[ROOT + "__form", className].filter(Boolean).join(" ")}
+      onSubmit={handleSubmit}
+    >
+      {children}
+    </form>
+  );
+}
+
+function BuiltinPromptInputBody({
+  className,
+  children,
+}: {
+  className?: string;
+  children?: ReactNode;
+}) {
+  return (
+    <div className={[ROOT + "__body", className].filter(Boolean).join(" ")}>
+      {children}
+    </div>
+  );
+}
+
+function BuiltinPromptInputTextarea({
+  className,
+  placeholder,
+  disabled,
+}: {
+  className?: string;
+  placeholder?: string;
+  disabled?: boolean;
+}) {
+  return (
+    <textarea
+      name="message"
+      className={[ROOT + "__textarea", className].filter(Boolean).join(" ")}
+      placeholder={placeholder}
+      disabled={disabled}
+      rows={2}
+      autoComplete="off"
+      onKeyDown={(e) => {
+        if (e.key !== "Enter" || e.shiftKey) return;
+        if (e.nativeEvent.isComposing) return;
+        e.preventDefault();
+        const form = e.currentTarget.form;
+        const submit = form?.querySelector(
+          'button[type="submit"]',
+        ) as HTMLButtonElement | null;
+        if (submit?.disabled) return;
+        form?.requestSubmit();
+      }}
+    />
+  );
+}
+
+function BuiltinPromptInputFooter({
+  className,
+  children,
+}: {
+  className?: string;
+  children?: ReactNode;
+}) {
+  return (
+    <div className={[ROOT + "__footer", className].filter(Boolean).join(" ")}>
+      {children}
+    </div>
+  );
+}
+
+function BuiltinPromptInputSubmit({
+  className,
+  disabled,
+  status,
+}: {
+  className?: string;
+  disabled?: boolean;
+  status?: "submitted" | "streaming" | "error";
+}) {
+  const busy = status === "submitted" || status === "streaming";
+  return (
+    <button
+      type="submit"
+      className={[ROOT + "__submit", className].filter(Boolean).join(" ")}
+      disabled={disabled || busy}
+      aria-busy={busy || undefined}
+    >
+      {busy ? <span className={ROOT + "__submitDot"} aria-hidden /> : "Send"}
+    </button>
+  );
+}
+
+/** Conversation / message / prompt primitives matching [Vercel AI Elements](https://elements.ai-sdk.dev) slot shapes — no shadcn or Tailwind required. */
+export const builtinAiElementsSlots: SunnyChatAiElementsSlots = {
+  Conversation: BuiltinConversation,
+  ConversationContent: BuiltinConversationContent,
+  Message: BuiltinMessage,
+  MessageContent: BuiltinMessageContent,
+  MessageResponse: BuiltinMessageResponse,
+  PromptInput: BuiltinPromptInput,
+  PromptInputBody: BuiltinPromptInputBody,
+  PromptInputTextarea: BuiltinPromptInputTextarea,
+  PromptInputFooter: BuiltinPromptInputFooter,
+  PromptInputSubmit: BuiltinPromptInputSubmit,
+  ConversationScrollButton: BuiltinConversationScrollButton,
+};
+
+export type SunnyChatBuiltinAiElementsProps = Omit<
+  SunnyChatAiElementsProps,
+  "aiElements"
+>;
+
+/**
+ * {@link SunnyChatAiElements} with built-in AI Elements–compatible UI (conversation, markdown bubbles, prompt input).
+ * For official registry components (Tailwind + shadcn), install AI Elements in your app and use {@link SunnyChatAiElements} with `aiElements`.
+ */
+export function SunnyChatBuiltinAiElements({
+  aiElementsOptions,
+  ...props
+}: SunnyChatBuiltinAiElementsProps) {
+  injectBuiltinAiElementsStylesOnce();
+  return (
+    <SunnyChatAiElements
+      aiElements={builtinAiElementsSlots}
+      aiElementsOptions={aiElementsOptions}
+      {...props}
+    />
+  );
+}

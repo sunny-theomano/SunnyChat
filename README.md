@@ -8,19 +8,9 @@ Source: [github.com/sunny-theomano/SunnyChat](https://github.com/sunny-theomano/
 
 1. In your app’s `package.json`, depend on the repo (pick **one** form):
 
-**Shorthand (public repo)**
+**HTTPS (recommended — works without GitHub SSH keys)**
 
-```json
-{
-  "dependencies": {
-    "sunny-chat": "github:sunny-theomano/SunnyChat#main"
-  }
-}
-```
-
-Use `main` or another branch to match GitHub. Pin a tag or commit if you want: `github:sunny-theomano/SunnyChat#v0.1.0` or `github:sunny-theomano/SunnyChat#abc1234`.
-
-**Full git URL (private repo + auth your machine already has)**
+The `github:org/repo` shorthand often resolves to `git@github.com:…` and fails with `Permission denied (publickey)` if you have not set up SSH. Prefer HTTPS:
 
 ```json
 {
@@ -30,11 +20,26 @@ Use `main` or another branch to match GitHub. Pin a tag or commit if you want: `
 }
 ```
 
+Use `main` or another branch to match GitHub. Pin a tag or commit: `#v0.1.0` or `#abc1234`.
+
+**Shorthand (only if Git SSH to GitHub already works on your machine)**
+
+```json
+{
+  "dependencies": {
+    "sunny-chat": "github:sunny-theomano/SunnyChat#main"
+  }
+}
+```
+
 2. Install:
 
 ```bash
 npm install
+# or: yarn install
 ```
+
+**If install fails with `exit code: 128` and `Permission denied (publickey)`:** your package manager is using SSH (`git@github.com`). Switch the dependency to the **`git+https://github.com/...`** form above, or [add an SSH key to GitHub](https://docs.github.com/en/authentication/connecting-to-github-with-ssh).
 
 On install, npm runs the **`prepare`** script in this package, which runs **`npm run build`** and generates `dist/`. You do **not** need to publish to the npm registry.
 
@@ -92,6 +97,31 @@ export function App() {
 - `defaultChrome={false}` — render thread + composer only; you provide shell / FAB
 
 ## Vercel AI Elements
+
+### Zero-setup built-in UI
+
+Use **`SunnyChatBuiltinAiElements`** when you want the same slot contract as [Vercel AI Elements](https://elements.ai-sdk.dev) (conversation, markdown messages, prompt input) **without** installing the shadcn registry or Tailwind in your app. Styling is scoped CSS and respects the same `sunny-chat` CSS variables as the default widget.
+
+```tsx
+import { SunnyChatBuiltinAiElements } from "sunny-chat";
+
+export function App() {
+  return (
+    <SunnyChatBuiltinAiElements
+      baseUrl={import.meta.env.VITE_API_BASE}
+      teamName="generac-team"
+      sessionIdSuffix="_generac_offer"
+      getUserId={() => null}
+      greetingAssistantText="Hi! How can I help?"
+      composerPlaceholder="Message…"
+    />
+  );
+}
+```
+
+Optional: `aiElementsOptions` (`conversationClassName`, `promptInputClassName`, `markdownUserMessages`). Advanced use: import **`builtinAiElementsSlots`** and pass them to **`SunnyChatAiElements`** or **`sunnyChatAiElementsRenderers`** if you wrap or replace individual slots.
+
+### Official registry components
 
 Use [Vercel AI Elements](https://elements.ai-sdk.dev) for the transcript and prompt UI while keeping Sunny transport, history, and quick replies. In your app, add AI Elements the usual way (Tailwind + shadcn/ui, then e.g. `npx ai-elements@latest` or the registry URLs from the docs) so you have components such as `conversation`, `message`, and `prompt-input`.
 
