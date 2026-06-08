@@ -30,6 +30,8 @@ export type { SunnyChatBuiltinAiElementsProps } from "./ui/builtinAiElementsSlot
 export { MessageList } from "./ui/MessageList.js";
 export type { MessageListProps, MessageListUi } from "./ui/MessageList.js";
 
+export { ChatPendingReply } from "./ui/ChatPendingReply.js";
+
 export { ChatComposer } from "./ui/ChatComposer.js";
 export type { ChatComposerProps, ChatComposerUi } from "./ui/ChatComposer.js";
 

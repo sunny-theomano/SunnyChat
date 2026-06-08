@@ -303,6 +303,7 @@ export function SunnyChat(props: SunnyChatProps) {
         ) : (
           <MessageList
             messages={chat.messages}
+            loading={chat.loading}
             renderAssistantContent={renderAssistantContent}
             renderUserContent={renderUserContent}
             ui={ui?.messages}

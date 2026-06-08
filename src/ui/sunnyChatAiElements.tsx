@@ -7,6 +7,7 @@ import type {
 } from "../core/types.js";
 import { SunnyChat } from "./SunnyChat.js";
 import type { SunnyChatMessageListContext, SunnyChatProps } from "./SunnyChat.js";
+import { ChatPendingReply } from "./ChatPendingReply.js";
 
 function DefaultSourcesList({ sources }: { sources: ChatSource[] }) {
   return (
@@ -79,34 +80,6 @@ function DefaultToolBlock({ invocation: inv }: { invocation: ChatToolInvocation 
   );
 }
 
-function DefaultStreamingLoader() {
-  return (
-    <div
-      style={{
-        display: "flex",
-        alignItems: "center",
-        gap: 6,
-        padding: "6px 2px",
-        fontSize: 12,
-        color: "#71717a",
-      }}
-      aria-live="polite"
-      aria-busy
-    >
-      <span
-        style={{
-          width: 6,
-          height: 6,
-          borderRadius: "50%",
-          background: "currentColor",
-          opacity: 0.65,
-        }}
-      />
-      Thinking…
-    </div>
-  );
-}
-
 /**
  * Components from your app’s AI Elements install (e.g. `npx ai-elements@latest` / shadcn registry).
  * Paths are typically `@/components/ai-elements/...` — see https://elements.ai-sdk.dev
@@ -134,7 +107,7 @@ export type SunnyChatAiElementsSlots = {
     className?: string;
     invocation: ChatToolInvocation;
   }>;
-  /** Below the transcript while the assistant stream is in flight. */
+  /** Optional custom loader inside the assistant bubble until the first text chunk arrives. */
   Loader?: ComponentType<{ className?: string }>;
   PromptInput: ComponentType<{
     className?: string;
@@ -189,6 +162,7 @@ export function sunnyChatAiElementsRenderers(
       const SourcesSlot = slots.MessageSources;
       const ToolSlot = slots.ToolInvocation;
       const LoaderSlot = slots.Loader;
+      const lastIdx = messages.length - 1;
 
       return (
         <div
@@ -204,7 +178,14 @@ export function sunnyChatAiElementsRenderers(
             role="log"
           >
             <ConversationContent>
-              {messages.map((m, i) => (
+              {messages.map((m, i) => {
+                const awaitingFirstChunk =
+                  ctx.loading &&
+                  i === lastIdx &&
+                  m.role === "assistant" &&
+                  !m.content.trim();
+
+                return (
                 <Message key={i} from={m.role}>
                   <MessageContent>
                     {m.role === "assistant" &&
@@ -224,7 +205,13 @@ export function sunnyChatAiElementsRenderers(
                           ),
                         )
                       : null}
-                    {m.role === "assistant" || markdownUser ? (
+                    {awaitingFirstChunk ? (
+                      LoaderSlot ? (
+                        <LoaderSlot />
+                      ) : (
+                        <ChatPendingReply />
+                      )
+                    ) : m.role === "assistant" || markdownUser ? (
                       <MessageResponse>{m.content}</MessageResponse>
                     ) : (
                       <span style={{ whiteSpace: "pre-wrap" }}>{m.content}</span>
@@ -238,22 +225,8 @@ export function sunnyChatAiElementsRenderers(
                     ) : null}
                   </MessageContent>
                 </Message>
-              ))}
-              {ctx.loading ? (
-                LoaderSlot ? (
-                  <Message from="assistant">
-                    <MessageContent>
-                      <LoaderSlot />
-                    </MessageContent>
-                  </Message>
-                ) : (
-                  <Message from="assistant">
-                    <MessageContent>
-                      <DefaultStreamingLoader />
-                    </MessageContent>
-                  </Message>
-                )
-              ) : null}
+                );
+              })}
             </ConversationContent>
             {ScrollBtn ? <ScrollBtn /> : null}
           </Conversation>

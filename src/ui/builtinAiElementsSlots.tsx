@@ -9,6 +9,7 @@ import {
 } from "react";
 import type { FormEvent, ReactNode } from "react";
 import type { ChatSource, ChatToolInvocation } from "../core/types.js";
+import { ChatPendingReply } from "./ChatPendingReply.js";
 import { useMarkedHtml } from "./markdown.js";
 import { SunnyChatAiElements } from "./sunnyChatAiElements.js";
 import type {
@@ -142,25 +143,6 @@ const builtinCss = `
   word-break: break-word;
   font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
   font-size: 11px;
-}
-.${ROOT}__loader {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 6px 2px;
-  font-size: 12px;
-  color: #71717a;
-}
-.${ROOT}__loaderDot {
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: currentColor;
-  animation: ${ROOT}-loader-pulse 0.9s ease-in-out infinite alternate;
-}
-@keyframes ${ROOT}-loader-pulse {
-  from { opacity: 0.35; transform: scale(0.85); }
-  to { opacity: 1; transform: scale(1); }
 }
 .${ROOT}__form {
   border-top: 1px solid var(--chat-panel-border, #e4e4e7);
@@ -450,12 +432,7 @@ function BuiltinToolInvocation({
 }
 
 function BuiltinLoader() {
-  return (
-    <div className={ROOT + "__loader"} aria-live="polite" aria-busy>
-      <span className={ROOT + "__loaderDot"} aria-hidden />
-      Thinking…
-    </div>
-  );
+  return <ChatPendingReply className={ROOT + "__pending"} />;
 }
 
 function BuiltinPromptInput({

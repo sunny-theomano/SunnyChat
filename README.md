@@ -98,6 +98,8 @@ export function App() {
 
 ## Vercel AI Elements
 
+While the assistant reply is streaming, a **default typing indicator** (three animated dots) appears **inside the last assistant bubble** until the first non-whitespace text chunk arrives — for both **`SunnyChatBuiltinAiElements`** / **`SunnyChatAiElements`** and the default **`SunnyChat`** message list (`MessageList` receives `loading` automatically). Override with the optional **`Loader`** slot on AI Elements, or **`renderAssistantContent`** on `SunnyChat`, if you need a custom look.
+
 ### Zero-setup built-in UI
 
 Use **`SunnyChatBuiltinAiElements`** when you want the same slot contract as [Vercel AI Elements](https://elements.ai-sdk.dev) (conversation, markdown messages, prompt input) **without** installing the shadcn registry or Tailwind in your app. Styling is scoped CSS and respects the same `sunny-chat` CSS variables as the default widget.
