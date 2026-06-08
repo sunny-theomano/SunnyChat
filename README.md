@@ -127,6 +127,20 @@ Use [Vercel AI Elements](https://elements.ai-sdk.dev) for the transcript and pro
 
 Then pass those components into **`SunnyChatAiElements`**:
 
+| Capability | Built-in (`SunnyChatBuiltinAiElements`) | With [AI Elements](https://elements.ai-sdk.dev) |
+|------------|----------------------------------------|--------------------------------------------------|
+| Chat bubbles / layout | Yes | `Message`, `MessageContent` |
+| Streaming text | Yes (`useChatSession` + last assistant bubble) | Same transport; use `MessageResponse` + **Streamdown** for richer streaming markdown |
+| Auto-scroll + jump-to-bottom | Yes (`Conversation` + stick-to-bottom) | Registry `Conversation` / `ConversationScrollButton` |
+| Markdown | Yes (`marked` + DOMPurify) | Prefer registry `MessageResponse` (often Streamdown) |
+| Code highlighting | Yes (**highlight.js** in markdown pipeline) | Streamdown `code` plugin or Shiki in your app |
+| Prompt input | Yes | `PromptInput` family |
+| Loading | Streaming row + submit `status="streaming"` | Match with `Loader`, `PromptInputSubmit` |
+| Tool calls | Renders `toolInvocations` (compact or **`ToolInvocation`** slot) | Map your registry tool UI to slot **`ToolInvocation`** |
+| Citations | Renders `sources` (compact or **`MessageSources`** slot) | Map e.g. `Sources` / citations component to **`MessageSources`** |
+
+Stream extras: implement **`parseChunk`** to return `{ kind: "assistant_sources", sources: [...] }` or `{ kind: "assistant_tool", tool: { name, state, id?, result? } }` so the UI updates during the same reply. History API may return `sources` / `toolInvocations` (or `tools`) on each message object — they are normalized automatically.
+
 ```tsx
 import {
   Conversation,
@@ -153,6 +167,10 @@ const aiElements = {
   Message,
   MessageContent,
   MessageResponse,
+  // Optional — wire when you use RAG / tools (names match sunny-chat slots):
+  // MessageSources: Sources,
+  // ToolInvocation: Tool,
+  // Loader: Loader,
   PromptInput,
   PromptInputBody,
   PromptInputTextarea,
@@ -179,6 +197,8 @@ export function App() {
 Optional **`aiElementsOptions`**: `conversationClassName`, `promptInputClassName`, `markdownUserMessages` (default `true` — user bubbles use `MessageResponse` / markdown like assistant).
 
 If you prefer to memoize render props yourself, import **`sunnyChatAiElementsRenderers`** and spread the result onto **`SunnyChat`** as `renderMessageList` and `renderComposer`.
+
+**`renderMessageList`:** receives **`(messages, { loading })`** so you can show typing indicators or disable controls while streaming.
 
 **Composer API:** custom `renderComposer` callbacks receive **`sendText(text)`** so uncontrolled inputs (AI Elements `PromptInput`) can send without syncing React state to `value` first. They also receive **`composerPlaceholder`**.
 
@@ -280,7 +300,7 @@ All classes are prefixed with **`sunny-chat__`**. Use them in your app CSS after
 
 - **`renderUserContent` / `renderAssistantContent`** — replace the **body** inside the default bubbles for sent vs received messages (layout/alignment and bubble chrome stay the default unless you use `renderMessageList` or `ui.messages.*ClassName` to style them).
 - **`ui.composer`** — `sendButtonLabel`, extra classes on the form / textarea / send button, `inputProps` merged onto the textarea, or `renderSendButton({ disabled, send })` for a fully custom send control.
-- **`renderComposer` / `renderMessageList`** — still the escape hatch to replace the whole composer or transcript while keeping `useChatSession` behavior via `SunnyChat`. The composer context includes **`sendText(message)`** for uncontrolled UIs (e.g. Vercel AI Elements `PromptInput`) and **`composerPlaceholder`**.
+- **`renderComposer` / `renderMessageList`** — still the escape hatch to replace the whole composer or transcript while keeping `useChatSession` behavior via `SunnyChat`. The composer context includes **`sendText(message)`** for uncontrolled UIs (e.g. Vercel AI Elements `PromptInput`) and **`composerPlaceholder`**. Custom **`renderMessageList(messages, { loading })`** receives **`loading`** while the assistant stream is active.
 
 TypeScript: `SunnyChatUi`, `MessageListUi`, `ChatComposerUi` in the package exports.
 

@@ -121,6 +121,32 @@ const defaultCss = `
 .${ROOT}__md p { margin: 0 0 0.5em; }
 .${ROOT}__md p:last-child { margin-bottom: 0; }
 .${ROOT}__md a { color: inherit; text-decoration: underline; }
+.${ROOT}__md pre.sunny-chat-md-pre {
+  margin: 0.5em 0;
+  padding: 10px 12px;
+  border-radius: 8px;
+  overflow-x: auto;
+  background: #1e1e2e;
+  color: #cdd6f4;
+  font-size: 12px;
+  line-height: 1.45;
+}
+.${ROOT}__md pre.sunny-chat-md-pre code.hljs {
+  background: transparent;
+  padding: 0;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+}
+.${ROOT}__md .hljs-keyword { color: #cba6f7; }
+.${ROOT}__md .hljs-string { color: #a6e3a1; }
+.${ROOT}__md .hljs-number { color: #fab387; }
+.${ROOT}__md .hljs-title,
+.${ROOT}__md .hljs-function { color: #89b4fa; }
+.${ROOT}__md .hljs-comment { color: #6c7086; font-style: italic; }
+.${ROOT}__md .hljs-built_in,
+.${ROOT}__md .hljs-type { color: #f9e2af; }
+.${ROOT}__md .hljs-attr,
+.${ROOT}__md .hljs-attribute { color: #89dceb; }
+.${ROOT}__md .hljs-meta { color: #94e2d5; }
 .${ROOT}__composer {
   border-top: 1px solid var(--chat-panel-border);
   padding: 10px;
@@ -180,6 +206,11 @@ export type SunnyChatUi = {
   composer?: ChatComposerUi;
 };
 
+export type SunnyChatMessageListContext = {
+  /** True while waiting on the assistant stream for the latest reply. */
+  loading: boolean;
+};
+
 export type SunnyChatProps = UseChatSessionConfig & {
   title?: string;
   launcherLabel?: string;
@@ -197,7 +228,10 @@ export type SunnyChatProps = UseChatSessionConfig & {
   renderAssistantContent?: (text: string) => ReactNode;
   /** User (sent) bubble body; default is plain text. */
   renderUserContent?: (text: string) => ReactNode;
-  renderMessageList?: (messages: ChatMessage[]) => ReactNode;
+  renderMessageList?: (
+    messages: ChatMessage[],
+    ctx: SunnyChatMessageListContext,
+  ) => ReactNode;
   renderComposer?: (ctx: {
     value: string;
     setValue: (v: string) => void;
@@ -265,7 +299,7 @@ export function SunnyChat(props: SunnyChatProps) {
             <div className={`${ROOT}__skeleton`}>Loading conversation…</div>
           )
         ) : renderMessageList ? (
-          renderMessageList(chat.messages)
+          renderMessageList(chat.messages, { loading: chat.loading })
         ) : (
           <MessageList
             messages={chat.messages}

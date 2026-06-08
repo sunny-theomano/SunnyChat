@@ -1,8 +1,111 @@
 import { useMemo } from "react";
 import type { ComponentType, FormEvent, ReactNode } from "react";
-import type { ChatMessage } from "../core/types.js";
+import type {
+  ChatMessage,
+  ChatSource,
+  ChatToolInvocation,
+} from "../core/types.js";
 import { SunnyChat } from "./SunnyChat.js";
-import type { SunnyChatProps } from "./SunnyChat.js";
+import type { SunnyChatMessageListContext, SunnyChatProps } from "./SunnyChat.js";
+
+function DefaultSourcesList({ sources }: { sources: ChatSource[] }) {
+  return (
+    <ul
+      style={{
+        margin: "8px 0 0",
+        paddingLeft: 18,
+        fontSize: 12,
+        lineHeight: 1.4,
+        color: "#52525b",
+      }}
+    >
+      {sources.map((s, i) => (
+        <li key={i} style={{ marginBottom: 4 }}>
+          {s.url ? (
+            <a
+              href={s.url}
+              target="_blank"
+              rel="noopener noreferrer"
+              style={{ color: "#2563eb" }}
+            >
+              {s.title}
+            </a>
+          ) : (
+            s.title
+          )}
+        </li>
+      ))}
+    </ul>
+  );
+}
+
+function DefaultToolBlock({ invocation: inv }: { invocation: ChatToolInvocation }) {
+  const stateColor =
+    inv.state === "error"
+      ? "#b91c1c"
+      : inv.state === "pending"
+        ? "#a16207"
+        : "#15803d";
+  return (
+    <div
+      style={{
+        marginBottom: 8,
+        padding: "8px 10px",
+        borderRadius: 8,
+        border: "1px solid #e4e4e7",
+        background: "#fafafa",
+        fontSize: 12,
+        lineHeight: 1.4,
+      }}
+    >
+      <div style={{ fontWeight: 600, marginBottom: 4 }}>
+        <span style={{ color: stateColor }}>{inv.state}</span>
+        <span style={{ marginLeft: 8 }}>{inv.name}</span>
+      </div>
+      {inv.result ? (
+        <pre
+          style={{
+            margin: 0,
+            whiteSpace: "pre-wrap",
+            wordBreak: "break-word",
+            fontFamily: "ui-monospace, monospace",
+            fontSize: 11,
+          }}
+        >
+          {inv.result}
+        </pre>
+      ) : null}
+    </div>
+  );
+}
+
+function DefaultStreamingLoader() {
+  return (
+    <div
+      style={{
+        display: "flex",
+        alignItems: "center",
+        gap: 6,
+        padding: "6px 2px",
+        fontSize: 12,
+        color: "#71717a",
+      }}
+      aria-live="polite"
+      aria-busy
+    >
+      <span
+        style={{
+          width: 6,
+          height: 6,
+          borderRadius: "50%",
+          background: "currentColor",
+          opacity: 0.65,
+        }}
+      />
+      Thinking…
+    </div>
+  );
+}
 
 /**
  * Components from your app’s AI Elements install (e.g. `npx ai-elements@latest` / shadcn registry).
@@ -21,6 +124,18 @@ export type SunnyChatAiElementsSlots = {
   Message: ComponentType<{ from: "user" | "assistant"; children?: ReactNode }>;
   MessageContent: ComponentType<{ children?: ReactNode }>;
   MessageResponse: ComponentType<{ children?: ReactNode }>;
+  /** Citations / RAG sources — optional; a compact list is used when omitted. */
+  MessageSources?: ComponentType<{
+    className?: string;
+    sources: ChatSource[];
+  }>;
+  /** Tool invocation row — optional; a compact block is used when omitted. */
+  ToolInvocation?: ComponentType<{
+    className?: string;
+    invocation: ChatToolInvocation;
+  }>;
+  /** Below the transcript while the assistant stream is in flight. */
+  Loader?: ComponentType<{ className?: string }>;
   PromptInput: ComponentType<{
     className?: string;
     onSubmit: (
@@ -62,7 +177,7 @@ export function sunnyChatAiElementsRenderers(
   const markdownUser = options?.markdownUserMessages !== false;
 
   return {
-    renderMessageList(messages: ChatMessage[]) {
+    renderMessageList(messages: ChatMessage[], ctx: SunnyChatMessageListContext) {
       const {
         Conversation,
         ConversationContent,
@@ -71,6 +186,9 @@ export function sunnyChatAiElementsRenderers(
         MessageResponse,
       } = slots;
       const ScrollBtn = slots.ConversationScrollButton;
+      const SourcesSlot = slots.MessageSources;
+      const ToolSlot = slots.ToolInvocation;
+      const LoaderSlot = slots.Loader;
 
       return (
         <div
@@ -89,14 +207,53 @@ export function sunnyChatAiElementsRenderers(
               {messages.map((m, i) => (
                 <Message key={i} from={m.role}>
                   <MessageContent>
+                    {m.role === "assistant" &&
+                    m.toolInvocations &&
+                    m.toolInvocations.length > 0
+                      ? m.toolInvocations.map((inv, ti) =>
+                          ToolSlot ? (
+                            <ToolSlot
+                              key={inv.id ?? `${i}-tool-${ti}`}
+                              invocation={inv}
+                            />
+                          ) : (
+                            <DefaultToolBlock
+                              key={inv.id ?? `${i}-tool-${ti}`}
+                              invocation={inv}
+                            />
+                          ),
+                        )
+                      : null}
                     {m.role === "assistant" || markdownUser ? (
                       <MessageResponse>{m.content}</MessageResponse>
                     ) : (
                       <span style={{ whiteSpace: "pre-wrap" }}>{m.content}</span>
                     )}
+                    {m.sources && m.sources.length > 0 ? (
+                      SourcesSlot ? (
+                        <SourcesSlot sources={m.sources} />
+                      ) : (
+                        <DefaultSourcesList sources={m.sources} />
+                      )
+                    ) : null}
                   </MessageContent>
                 </Message>
               ))}
+              {ctx.loading ? (
+                LoaderSlot ? (
+                  <Message from="assistant">
+                    <MessageContent>
+                      <LoaderSlot />
+                    </MessageContent>
+                  </Message>
+                ) : (
+                  <Message from="assistant">
+                    <MessageContent>
+                      <DefaultStreamingLoader />
+                    </MessageContent>
+                  </Message>
+                )
+              ) : null}
             </ConversationContent>
             {ScrollBtn ? <ScrollBtn /> : null}
           </Conversation>
@@ -137,7 +294,7 @@ export function sunnyChatAiElementsRenderers(
               {Tools ? <Tools /> : null}
               <PromptInputSubmit
                 disabled={loading}
-                status={loading ? "submitted" : undefined}
+                status={loading ? "streaming" : undefined}
               />
             </PromptInputFooter>
           </PromptInputBody>

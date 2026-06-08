@@ -8,6 +8,7 @@ import {
   useState,
 } from "react";
 import type { FormEvent, ReactNode } from "react";
+import type { ChatSource, ChatToolInvocation } from "../core/types.js";
 import { useMarkedHtml } from "./markdown.js";
 import { SunnyChatAiElements } from "./sunnyChatAiElements.js";
 import type {
@@ -82,6 +83,85 @@ const builtinCss = `
 .${ROOT}__md p { margin: 0 0 0.5em; }
 .${ROOT}__md p:last-child { margin-bottom: 0; }
 .${ROOT}__md a { color: inherit; text-decoration: underline; }
+.${ROOT}__md pre.sunny-chat-md-pre {
+  margin: 0.5em 0;
+  padding: 10px 12px;
+  border-radius: 8px;
+  overflow-x: auto;
+  background: #1e1e2e;
+  color: #cdd6f4;
+  font-size: 12px;
+  line-height: 1.45;
+}
+.${ROOT}__md pre.sunny-chat-md-pre code.hljs {
+  background: transparent;
+  padding: 0;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+}
+.${ROOT}__md .hljs-keyword { color: #cba6f7; }
+.${ROOT}__md .hljs-string { color: #a6e3a1; }
+.${ROOT}__md .hljs-number { color: #fab387; }
+.${ROOT}__md .hljs-title,
+.${ROOT}__md .hljs-function { color: #89b4fa; }
+.${ROOT}__md .hljs-comment { color: #6c7086; font-style: italic; }
+.${ROOT}__md .hljs-built_in,
+.${ROOT}__md .hljs-type { color: #f9e2af; }
+.${ROOT}__md .hljs-attr,
+.${ROOT}__md .hljs-attribute { color: #89dceb; }
+.${ROOT}__md .hljs-meta { color: #94e2d5; }
+.${ROOT}__sources {
+  margin-top: 8px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  border: 1px solid var(--chat-panel-border, #e4e4e7);
+  background: #fafafa;
+  font-size: 12px;
+  line-height: 1.45;
+  color: #3f3f46;
+}
+.${ROOT}__sourcesTitle { font-weight: 600; margin-bottom: 6px; }
+.${ROOT}__sources ul { margin: 0; padding-left: 18px; }
+.${ROOT}__sources a { color: #2563eb; }
+.${ROOT}__tool {
+  margin-bottom: 8px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  border: 1px solid var(--chat-panel-border, #e4e4e7);
+  background: #fafafa;
+  font-size: 12px;
+  line-height: 1.4;
+}
+.${ROOT}__toolHead { font-weight: 600; margin-bottom: 4px; }
+.${ROOT}__toolState { font-weight: 500; margin-right: 8px; }
+.${ROOT}__toolState--pending { color: #a16207; }
+.${ROOT}__toolState--complete { color: #15803d; }
+.${ROOT}__toolState--error { color: #b91c1c; }
+.${ROOT}__toolPre {
+  margin: 0;
+  white-space: pre-wrap;
+  word-break: break-word;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 11px;
+}
+.${ROOT}__loader {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 2px;
+  font-size: 12px;
+  color: #71717a;
+}
+.${ROOT}__loaderDot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+  animation: ${ROOT}-loader-pulse 0.9s ease-in-out infinite alternate;
+}
+@keyframes ${ROOT}-loader-pulse {
+  from { opacity: 0.35; transform: scale(0.85); }
+  to { opacity: 1; transform: scale(1); }
+}
 .${ROOT}__form {
   border-top: 1px solid var(--chat-panel-border, #e4e4e7);
   padding: 10px;
@@ -322,6 +402,62 @@ function BuiltinMessageResponse({
   );
 }
 
+function BuiltinMessageSources({ sources }: { sources: ChatSource[] }) {
+  return (
+    <div className={ROOT + "__sources"}>
+      <div className={ROOT + "__sourcesTitle"}>Sources</div>
+      <ul>
+        {sources.map((s, i) => (
+          <li key={i}>
+            {s.url ? (
+              <a href={s.url} target="_blank" rel="noopener noreferrer">
+                {s.title}
+              </a>
+            ) : (
+              s.title
+            )}
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
+function BuiltinToolInvocation({
+  invocation: inv,
+}: {
+  invocation: ChatToolInvocation;
+}) {
+  const stateClass =
+    inv.state === "pending"
+      ? ROOT + "__toolState--pending"
+      : inv.state === "error"
+        ? ROOT + "__toolState--error"
+        : ROOT + "__toolState--complete";
+  return (
+    <div className={ROOT + "__tool"}>
+      <div className={ROOT + "__toolHead"}>
+        <span className={[ROOT + "__toolState", stateClass].join(" ")}>
+          {inv.state}
+        </span>
+        <span>{inv.name}</span>
+      </div>
+      {inv.result ? (
+        <pre className={ROOT + "__toolPre"}>{inv.result}</pre>
+      ) : null}
+    </div>
+  );
+}
+
+function BuiltinLoader() {
+  return (
+    <div className={ROOT + "__loader"} aria-live="polite" aria-busy>
+      <span className={ROOT + "__loaderDot"} aria-hidden />
+      Thinking…
+    </div>
+  );
+}
+
 function BuiltinPromptInput({
   className,
   onSubmit,
@@ -445,6 +581,9 @@ export const builtinAiElementsSlots: SunnyChatAiElementsSlots = {
   Message: BuiltinMessage,
   MessageContent: BuiltinMessageContent,
   MessageResponse: BuiltinMessageResponse,
+  MessageSources: BuiltinMessageSources,
+  ToolInvocation: BuiltinToolInvocation,
+  Loader: BuiltinLoader,
   PromptInput: BuiltinPromptInput,
   PromptInputBody: BuiltinPromptInputBody,
   PromptInputTextarea: BuiltinPromptInputTextarea,

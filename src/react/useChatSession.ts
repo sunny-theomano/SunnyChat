@@ -16,6 +16,7 @@ import type {
   ChatAnalyticsContext,
   ChatAnalyticsEvent,
   ChatMessage,
+  ChatToolInvocation,
   ParseChunkResult,
   StreamEventPayload,
 } from "../core/types.js";
@@ -23,6 +24,53 @@ import type {
 const DEFAULT_ERROR =
   "I'm having trouble connecting. Please try again in a moment.";
 const DEFAULT_MONITOR = true;
+
+function patchLastAssistant(
+  prev: ChatMessage[],
+  fn: (m: ChatMessage) => ChatMessage,
+): ChatMessage[] {
+  if (prev.length === 0) return prev;
+  const next = [...prev];
+  const last = next[next.length - 1];
+  if (!last || last.role !== "assistant") return prev;
+  next[next.length - 1] = fn(last);
+  return next;
+}
+
+function mergeToolInvocations(
+  existing: ChatToolInvocation[] | undefined,
+  tool: ChatToolInvocation,
+): ChatToolInvocation[] {
+  const list = [...(existing ?? [])];
+  const id = tool.id;
+  if (id) {
+    const idx = list.findIndex((t) => t.id === id);
+    if (idx >= 0) list[idx] = { ...list[idx], ...tool };
+    else list.push(tool);
+  } else {
+    list.push(tool);
+  }
+  return list;
+}
+
+function applyParseChunkToMessages(
+  prev: ChatMessage[],
+  r: ParseChunkResult,
+): ChatMessage[] {
+  if (r.kind === "assistant_sources") {
+    return patchLastAssistant(prev, (m) => ({
+      ...m,
+      sources: r.sources,
+    }));
+  }
+  if (r.kind === "assistant_tool") {
+    return patchLastAssistant(prev, (m) => ({
+      ...m,
+      toolInvocations: mergeToolInvocations(m.toolInvocations, r.tool),
+    }));
+  }
+  return prev;
+}
 
 export type UseChatSessionConfig = {
   /** If true, panel starts open (headless / embedded modes). */
@@ -223,6 +271,12 @@ export function useChatSession(cfg: UseChatSessionConfig) {
             monitor: DEFAULT_MONITOR,
             session_id: sessionId,
             team_name: cfg.teamName,
+          },
+          onParseChunk: (r) => {
+            if (r.kind !== "assistant_sources" && r.kind !== "assistant_tool") {
+              return;
+            }
+            setMessages((prev) => applyParseChunkToMessages(prev, r));
           },
           onDelta: (delta) => {
             setMessages((prev) => {

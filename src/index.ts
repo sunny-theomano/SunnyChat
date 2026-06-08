@@ -5,7 +5,11 @@ export type {
 } from "./react/useChatSession.js";
 
 export { SunnyChat } from "./ui/SunnyChat.js";
-export type { SunnyChatProps, SunnyChatUi } from "./ui/SunnyChat.js";
+export type {
+  SunnyChatProps,
+  SunnyChatUi,
+  SunnyChatMessageListContext,
+} from "./ui/SunnyChat.js";
 
 export {
   SunnyChatAiElements,
@@ -32,6 +36,8 @@ export type { ChatComposerProps, ChatComposerUi } from "./ui/ChatComposer.js";
 export type {
   ChatMessage,
   ChatRole,
+  ChatSource,
+  ChatToolInvocation,
   ChatAnalyticsEvent,
   ChatAnalyticsContext,
   ParseChunkResult,
@@ -46,6 +52,6 @@ export {
   resolveChatUrl,
   resolveHistoryUrl,
 } from "./core/streamChat.js";
-export type { StreamChatBody } from "./core/streamChat.js";
+export type { StreamChatBody, StreamChatParams } from "./core/streamChat.js";
 
 export { useMarkedHtml } from "./ui/markdown.js";
