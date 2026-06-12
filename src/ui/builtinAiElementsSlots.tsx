@@ -7,14 +7,16 @@ import {
   useRef,
   useState,
 } from "react";
-import type { FormEvent, ReactNode } from "react";
+import type { CSSProperties, FormEvent, ReactNode } from "react";
 import type { ChatSource, ChatToolInvocation } from "../core/types.js";
 import { ChatPendingReply } from "./ChatPendingReply.js";
 import { useMarkedHtml } from "./markdown.js";
-import { SunnyChatAiElements } from "./sunnyChatAiElements.js";
-import type {
-  SunnyChatAiElementsProps,
-  SunnyChatAiElementsSlots,
+import {
+  mergeSunnyChatAiElementsOptions,
+  SunnyChatAiElements,
+  type SunnyChatAiElementsProps,
+  type SunnyChatAiElementsRenderersOptions,
+  type SunnyChatAiElementsSlots,
 } from "./sunnyChatAiElements.js";
 
 const ROOT = "sunny-chat-ael";
@@ -35,6 +37,7 @@ const builtinCss = `
   overflow-y: auto;
   overflow-x: hidden;
   padding: 8px 4px 12px;
+  background: var(--chat-messages-bg, transparent);
 }
 .${ROOT}__scrollBtn {
   position: absolute;
@@ -147,7 +150,30 @@ const builtinCss = `
 .${ROOT}__form {
   border-top: 1px solid var(--chat-panel-border, #e4e4e7);
   padding: 10px;
-  background: #fafafa;
+  background: var(--chat-composer-bg, #fafafa);
+}
+.${ROOT}__suggestions {
+  margin-bottom: 10px;
+  padding: 0 2px;
+}
+.${ROOT}__suggestions .sunny-chat__quick {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 0;
+}
+.${ROOT}__suggestions .sunny-chat__quickBtn {
+  border: 1px solid var(--chat-panel-border, #e4e4e7);
+  background: #fff;
+  border-radius: 999px;
+  padding: 6px 12px;
+  cursor: pointer;
+  font: inherit;
+  font-size: 12px;
+  color: #3f3f46;
+}
+.${ROOT}__suggestions .sunny-chat__quickBtn:hover {
+  background: #f4f4f5;
 }
 .${ROOT}__body {
   display: flex;
@@ -164,7 +190,7 @@ const builtinCss = `
   padding: 10px 12px;
   font: inherit;
   font-size: 14px;
-  background: #fff;
+  background: var(--chat-input-bg, #fff);
   box-sizing: border-box;
 }
 .${ROOT}__textarea:focus {
@@ -214,6 +240,60 @@ function injectBuiltinAiElementsStylesOnce() {
   el.id = STYLE_ID;
   el.textContent = builtinCss;
   document.head.appendChild(el);
+}
+
+/** Maps to builtin CSS variables (`--chat-user-bg`, `--chat-messages-bg`, …). */
+export type SunnyChatBuiltinThemeVars = {
+  userBubbleBackground?: string;
+  userBubbleForeground?: string;
+  assistantBubbleBackground?: string;
+  assistantBubbleForeground?: string;
+  messagesAreaBackground?: string;
+  composerBackground?: string;
+  inputBackground?: string;
+  panelBorder?: string;
+  sendButtonBackground?: string;
+  sendButtonForeground?: string;
+};
+
+export type SunnyChatBuiltinAiElementsUi = SunnyChatAiElementsRenderersOptions & {
+  /** Merged onto the outer `SunnyChat` `className` (e.g. Tailwind scope). */
+  rootClassName?: string;
+  /** Merged into `ui.rootStyle` after {@link SunnyChatBuiltinThemeVars}. */
+  rootStyle?: CSSProperties;
+  themeVars?: SunnyChatBuiltinThemeVars;
+};
+
+function sunnyChatBuiltinThemeVarsToStyle(
+  vars?: SunnyChatBuiltinThemeVars,
+): CSSProperties | undefined {
+  if (!vars) return undefined;
+  const s: Record<string, string> = {};
+  if (vars.userBubbleBackground) s["--chat-user-bg"] = vars.userBubbleBackground;
+  if (vars.userBubbleForeground) s["--chat-user-fg"] = vars.userBubbleForeground;
+  if (vars.assistantBubbleBackground) {
+    s["--chat-assistant-bg"] = vars.assistantBubbleBackground;
+  }
+  if (vars.assistantBubbleForeground) {
+    s["--chat-assistant-fg"] = vars.assistantBubbleForeground;
+  }
+  if (vars.messagesAreaBackground) {
+    s["--chat-messages-bg"] = vars.messagesAreaBackground;
+  }
+  if (vars.composerBackground) s["--chat-composer-bg"] = vars.composerBackground;
+  if (vars.inputBackground) s["--chat-input-bg"] = vars.inputBackground;
+  if (vars.panelBorder) s["--chat-panel-border"] = vars.panelBorder;
+  if (vars.sendButtonBackground) s["--chat-fab-bg"] = vars.sendButtonBackground;
+  if (vars.sendButtonForeground) s["--chat-fab-fg"] = vars.sendButtonForeground;
+  return s as CSSProperties;
+}
+
+function sliceBuiltinRendererOptions(
+  ui?: SunnyChatBuiltinAiElementsUi,
+): SunnyChatAiElementsRenderersOptions | undefined {
+  if (!ui) return undefined;
+  const { rootClassName: _rc, rootStyle: _rs, themeVars: _tv, ...rest } = ui;
+  return rest;
 }
 
 type ScrollCtx = {
@@ -435,6 +515,23 @@ function BuiltinLoader() {
   return <ChatPendingReply className={ROOT + "__pending"} />;
 }
 
+function BuiltinPromptSuggestions({
+  className,
+  children,
+}: {
+  className?: string;
+  children?: ReactNode;
+}) {
+  if (!children) return null;
+  return (
+    <div
+      className={[ROOT + "__suggestions", className].filter(Boolean).join(" ")}
+    >
+      {children}
+    </div>
+  );
+}
+
 function BuiltinPromptInput({
   className,
   onSubmit,
@@ -533,10 +630,12 @@ function BuiltinPromptInputSubmit({
   className,
   disabled,
   status,
+  children,
 }: {
   className?: string;
   disabled?: boolean;
   status?: "submitted" | "streaming" | "error";
+  children?: ReactNode;
 }) {
   const busy = status === "submitted" || status === "streaming";
   return (
@@ -546,7 +645,7 @@ function BuiltinPromptInputSubmit({
       disabled={disabled || busy}
       aria-busy={busy || undefined}
     >
-      {busy ? <span className={ROOT + "__submitDot"} aria-hidden /> : "Send"}
+      {busy ? <span className={ROOT + "__submitDot"} aria-hidden /> : children ?? "Send"}
     </button>
   );
 }
@@ -562,6 +661,7 @@ export const builtinAiElementsSlots: SunnyChatAiElementsSlots = {
   ToolInvocation: BuiltinToolInvocation,
   Loader: BuiltinLoader,
   PromptInput: BuiltinPromptInput,
+  PromptSuggestions: BuiltinPromptSuggestions,
   PromptInputBody: BuiltinPromptInputBody,
   PromptInputTextarea: BuiltinPromptInputTextarea,
   PromptInputFooter: BuiltinPromptInputFooter,
@@ -572,22 +672,48 @@ export const builtinAiElementsSlots: SunnyChatAiElementsSlots = {
 export type SunnyChatBuiltinAiElementsProps = Omit<
   SunnyChatAiElementsProps,
   "aiElements"
->;
+> & {
+  /**
+   * Builtin-only styling: CSS variables, root classes, and the same option keys as
+   * {@link SunnyChatAiElementsRenderersOptions} (merged with `aiElementsOptions`).
+   */
+  builtinUi?: SunnyChatBuiltinAiElementsUi;
+};
 
 /**
  * {@link SunnyChatAiElements} with built-in AI Elements–compatible UI (conversation, markdown bubbles, prompt input).
  * For official registry components (Tailwind + shadcn), install AI Elements in your app and use {@link SunnyChatAiElements} with `aiElements`.
  */
 export function SunnyChatBuiltinAiElements({
+  builtinUi,
   aiElementsOptions,
+  className,
+  ui,
   ...props
 }: SunnyChatBuiltinAiElementsProps) {
   injectBuiltinAiElementsStylesOnce();
+  const fromTheme = sunnyChatBuiltinThemeVarsToStyle(builtinUi?.themeVars);
+  const mergedOptions = mergeSunnyChatAiElementsOptions(
+    aiElementsOptions,
+    sliceBuiltinRendererOptions(builtinUi),
+  );
+  const mergedUi =
+    fromTheme || builtinUi?.rootStyle || ui
+      ? {
+          ...ui,
+          rootStyle: { ...fromTheme, ...builtinUi?.rootStyle, ...ui?.rootStyle },
+        }
+      : ui;
+  const mergedClassName =
+    [className, builtinUi?.rootClassName].filter(Boolean).join(" ") || undefined;
+
   return (
     <SunnyChatAiElements
-      aiElements={builtinAiElementsSlots}
-      aiElementsOptions={aiElementsOptions}
       {...props}
+      className={mergedClassName}
+      ui={mergedUi}
+      aiElements={builtinAiElementsSlots}
+      aiElementsOptions={mergedOptions}
     />
   );
 }

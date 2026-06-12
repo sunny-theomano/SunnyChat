@@ -14,6 +14,7 @@ export type {
 export {
   SunnyChatAiElements,
   sunnyChatAiElementsRenderers,
+  mergeSunnyChatAiElementsOptions,
 } from "./ui/sunnyChatAiElements.js";
 export type {
   SunnyChatAiElementsProps,
@@ -25,7 +26,11 @@ export {
   builtinAiElementsSlots,
   SunnyChatBuiltinAiElements,
 } from "./ui/builtinAiElementsSlots.js";
-export type { SunnyChatBuiltinAiElementsProps } from "./ui/builtinAiElementsSlots.js";
+export type {
+  SunnyChatBuiltinAiElementsProps,
+  SunnyChatBuiltinAiElementsUi,
+  SunnyChatBuiltinThemeVars,
+} from "./ui/builtinAiElementsSlots.js";
 
 export { MessageList } from "./ui/MessageList.js";
 export type { MessageListProps, MessageListUi } from "./ui/MessageList.js";

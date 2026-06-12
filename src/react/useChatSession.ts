@@ -86,6 +86,12 @@ export type UseChatSessionConfig = {
   getUserId: () => string | null;
   greetingAssistantText: string;
   quickQuestions?: string[];
+  /**
+   * When `quickQuestions` are shown above the composer.
+   * - `welcome` (default): only before the first user send (original behavior).
+   * - `always`: whenever the panel is open and `quickQuestions` is non-empty (AI Elements–style persistent chips).
+   */
+  quickReplyBehavior?: "welcome" | "always";
   sanitizeHistory?: (data: unknown) => unknown;
   filterUiMessages?: (messages: ChatMessage[]) => ChatMessage[];
   shouldSkipAutoSend?: (messages: ChatMessage[]) => boolean;
@@ -347,7 +353,7 @@ export function useChatSession(cfg: UseChatSessionConfig) {
     [cfg, analyticsCtx, sendMessage]
   );
 
-  const showQuickReplies =
+  const welcomeQuickReplies =
     isOpen &&
     historyInitialized &&
     !isLoadingHistory &&
@@ -355,6 +361,18 @@ export function useChatSession(cfg: UseChatSessionConfig) {
     messages.length <= 1 &&
     (messages.length === 0 ||
       (messages.length === 1 && messages[0].role === "assistant"));
+
+  const alwaysQuickReplies =
+    isOpen &&
+    historyInitialized &&
+    !isLoadingHistory &&
+    !loading &&
+    (cfg.quickQuestions?.length ?? 0) > 0;
+
+  const showQuickReplies =
+    cfg.quickReplyBehavior === "always"
+      ? alwaysQuickReplies
+      : welcomeQuickReplies;
 
   return {
     messages,

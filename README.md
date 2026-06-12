@@ -89,7 +89,8 @@ export function App() {
 
 ### Optional
 
-- `quickQuestions` — chips until first interaction (per doc)
+- `quickQuestions` — suggestion chips above the composer; see **`quickReplyBehavior`** below
+- **`quickReplyBehavior`** — `welcome` (default): chips only before the first user message; `always`: chips stay visible whenever `quickQuestions` is set (closer to persistent AI Elements suggestions)
 - `sanitizeHistory` / `filterUiMessages` / `shouldSkipAutoSend` — loader / hidden-prompt flows
 - `parseChunk` — extend SSE JSON handling beyond `TeamRunContent` / `TeamRunCompleted`
 - `connectionErrorText` — assistant bubble text on network/HTTP failure
@@ -115,19 +116,47 @@ export function App() {
       sessionIdSuffix="_generac_offer"
       getUserId={() => null}
       greetingAssistantText="Hi! How can I help?"
+      quickQuestions={["Summarize this", "What are the risks?", "Next steps"]}
+      quickReplyBehavior="always"
       composerPlaceholder="Message…"
     />
   );
 }
 ```
 
-Optional: `aiElementsOptions` (`conversationClassName`, `promptInputClassName`, `markdownUserMessages`). Advanced use: import **`builtinAiElementsSlots`** and pass them to **`SunnyChatAiElements`** or **`sunnyChatAiElementsRenderers`** if you wrap or replace individual slots.
+Optional: `aiElementsOptions` — same keys as for **`SunnyChatAiElements`** (class names on conversation, prompt, per-role messages, submit label, etc.). For the **builtin** skin only, you can also pass **`builtinUi`**: it merges into `aiElementsOptions` / `ui.rootStyle` and supports **`themeVars`** for common CSS variables (`userBubbleBackground` → `--chat-user-bg`, `messagesAreaBackground` → `--chat-messages-bg`, `composerBackground` → `--chat-composer-bg`, `inputBackground` → `--chat-input-bg`, send colors → `--chat-fab-bg` / `--chat-fab-fg`, …). Use **`rootClassName`** / **`rootStyle`** on `builtinUi` for Tailwind scope or extra variables. The slot **names and shapes** stay identical to Vercel AI Elements.
+
+```tsx
+<SunnyChatBuiltinAiElements
+  baseUrl="…"
+  teamName="…"
+  sessionIdSuffix="…"
+  getUserId={() => null}
+  greetingAssistantText="Hi!"
+  builtinUi={{
+    rootClassName: "rounded-2xl shadow-lg",
+    themeVars: {
+      userBubbleBackground: "#0f172a",
+      assistantBubbleBackground: "#f1f5f9",
+      messagesAreaBackground: "#fafafa",
+      sendButtonBackground: "#0ea5e9",
+    },
+    userBubbleClassName: "shadow-sm",
+    assistantBubbleClassName: "border border-slate-200",
+    promptTextareaClassName: "font-medium",
+    promptSubmitLabel: "Send",
+    conversationContentClassName: "px-2",
+  }}
+/>
+```
+
+Advanced use: import **`builtinAiElementsSlots`** and pass them to **`SunnyChatAiElements`** or **`sunnyChatAiElementsRenderers`** if you wrap or replace individual slots.
 
 ### Official registry components
 
 Use [Vercel AI Elements](https://elements.ai-sdk.dev) for the transcript and prompt UI while keeping Sunny transport, history, and quick replies. In your app, add AI Elements the usual way (Tailwind + shadcn/ui, then e.g. `npx ai-elements@latest` or the registry URLs from the docs) so you have components such as `conversation`, `message`, and `prompt-input`.
 
-Then pass those components into **`SunnyChatAiElements`**:
+When using **`SunnyChatAiElements`** with registry components, ensure **`Message`**, **`MessageContent`**, **`MessageResponse`**, **`ConversationContent`**, and **`PromptInput*`** forward a `className` prop (and **`PromptInputSubmit`** forwards `children`) so `aiElementsOptions` styling applies. The capability table below compares built-in vs registry; the code sample after it wires `aiElements` into **`SunnyChatAiElements`**.
 
 | Capability | Built-in (`SunnyChatBuiltinAiElements`) | With [AI Elements](https://elements.ai-sdk.dev) |
 |------------|----------------------------------------|--------------------------------------------------|
@@ -136,7 +165,7 @@ Then pass those components into **`SunnyChatAiElements`**:
 | Auto-scroll + jump-to-bottom | Yes (`Conversation` + stick-to-bottom) | Registry `Conversation` / `ConversationScrollButton` |
 | Markdown | Yes (`marked` + DOMPurify) | Prefer registry `MessageResponse` (often Streamdown) |
 | Code highlighting | Yes (**highlight.js** in markdown pipeline) | Streamdown `code` plugin or Shiki in your app |
-| Prompt input | Yes | `PromptInput` family |
+| Suggestion chips | Yes — **`PromptSuggestions`** slot wraps `quickQuestions` (builtin styled row); `aiElementsOptions.promptSuggestionsClassName` | Map registry **`PromptSuggestions`** (or equivalent) to slot **`PromptSuggestions`** |
 | Loading | Streaming row + submit `status="streaming"` | Match with `Loader`, `PromptInputSubmit` |
 | Tool calls | Renders `toolInvocations` (compact or **`ToolInvocation`** slot) | Map your registry tool UI to slot **`ToolInvocation`** |
 | Citations | Renders `sources` (compact or **`MessageSources`** slot) | Map e.g. `Sources` / citations component to **`MessageSources`** |
@@ -161,6 +190,7 @@ import {
   PromptInputFooter,
   PromptInputSubmit,
 } from "@/components/ai-elements/prompt-input";
+// When your AI Elements build exports PromptSuggestions, import it and add to `aiElements` below.
 import { SunnyChatAiElements } from "sunny-chat";
 
 const aiElements = {
@@ -174,6 +204,7 @@ const aiElements = {
   // ToolInvocation: Tool,
   // Loader: Loader,
   PromptInput,
+  // PromptSuggestions, // optional — wraps `quickQuestions` when your registry exports this component
   PromptInputBody,
   PromptInputTextarea,
   PromptInputFooter,
@@ -196,7 +227,7 @@ export function App() {
 }
 ```
 
-Optional **`aiElementsOptions`**: `conversationClassName`, `promptInputClassName`, `markdownUserMessages` (default `true` — user bubbles use `MessageResponse` / markdown like assistant).
+Optional **`aiElementsOptions`**: all keys from **`SunnyChatAiElementsRenderersOptions`** (conversation / message list / prompt class names, per-role bubbles, `promptSubmitLabel`, `markdownUserMessages`, …). Use **`mergeSunnyChatAiElementsOptions`** if you compose options in code.
 
 If you prefer to memoize render props yourself, import **`sunnyChatAiElementsRenderers`** and spread the result onto **`SunnyChat`** as `renderMessageList` and `renderComposer`.
 

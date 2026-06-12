@@ -94,9 +94,13 @@ export type SunnyChatAiElementsSlots = {
     className?: string;
     children?: ReactNode;
   }>;
-  Message: ComponentType<{ from: "user" | "assistant"; children?: ReactNode }>;
-  MessageContent: ComponentType<{ children?: ReactNode }>;
-  MessageResponse: ComponentType<{ children?: ReactNode }>;
+  Message: ComponentType<{
+    from: "user" | "assistant";
+    className?: string;
+    children?: ReactNode;
+  }>;
+  MessageContent: ComponentType<{ className?: string; children?: ReactNode }>;
+  MessageResponse: ComponentType<{ className?: string; children?: ReactNode }>;
   /** Citations / RAG sources — optional; a compact list is used when omitted. */
   MessageSources?: ComponentType<{
     className?: string;
@@ -117,6 +121,14 @@ export type SunnyChatAiElementsSlots = {
     ) => void | Promise<void>;
     children?: ReactNode;
   }>;
+  /**
+   * Wraps quick-reply / suggestion chips (from `quickQuestions`) above the prompt body.
+   * Aligns with Vercel AI Elements “suggestions” row; optional — builtin provides a default wrapper.
+   */
+  PromptSuggestions?: ComponentType<{
+    className?: string;
+    children?: ReactNode;
+  }>;
   PromptInputBody: ComponentType<{ className?: string; children?: ReactNode }>;
   PromptInputTextarea: ComponentType<{
     placeholder?: string;
@@ -128,6 +140,7 @@ export type SunnyChatAiElementsSlots = {
     disabled?: boolean;
     status?: "submitted" | "streaming" | "error";
     className?: string;
+    children?: ReactNode;
   }>;
   ConversationScrollButton?: ComponentType<{ className?: string }>;
   PromptInputTools?: ComponentType<{
@@ -136,12 +149,97 @@ export type SunnyChatAiElementsSlots = {
   }>;
 };
 
+function cx(...parts: (string | undefined)[]) {
+  return parts.filter(Boolean).join(" ");
+}
+
 export type SunnyChatAiElementsRenderersOptions = {
   conversationClassName?: string;
+  /** Scroll / message list region (builtin: `.sunny-chat-ael__scroll`). */
+  conversationContentClassName?: string;
   promptInputClassName?: string;
+  /** Extra class on the suggestions row above the textarea (AI Elements `PromptSuggestions`). */
+  promptSuggestionsClassName?: string;
+  promptFormClassName?: string;
+  promptBodyClassName?: string;
+  promptTextareaClassName?: string;
+  promptFooterClassName?: string;
+  promptSubmitClassName?: string;
+  /** Idle send control label (string or icon). Builtin defaults to “Send”. */
+  promptSubmitLabel?: ReactNode;
+  /** User row (`Message` when `from="user"`). */
+  userMessageClassName?: string;
+  /** Assistant row (`Message` when `from="assistant"`). */
+  assistantMessageClassName?: string;
+  /** User bubble (`MessageContent`). */
+  userBubbleClassName?: string;
+  /** Assistant bubble (`MessageContent`). */
+  assistantBubbleClassName?: string;
+  /** Extra class on `MessageResponse` for user markdown bubbles. */
+  userMessageResponseClassName?: string;
+  /** Extra class on `MessageResponse` for assistant markdown. */
+  assistantMessageResponseClassName?: string;
   /** When false, user bubbles are plain text (no markdown). Default true. */
   markdownUserMessages?: boolean;
 };
+
+/** Deep-merge className fields on {@link SunnyChatAiElementsRenderersOptions}. */
+export function mergeSunnyChatAiElementsOptions(
+  base?: SunnyChatAiElementsRenderersOptions,
+  over?: SunnyChatAiElementsRenderersOptions,
+): SunnyChatAiElementsRenderersOptions | undefined {
+  if (!base && !over) return undefined;
+  const a = base ?? {};
+  const b = over ?? {};
+  return {
+    ...a,
+    ...b,
+    markdownUserMessages:
+      b.markdownUserMessages !== undefined ? b.markdownUserMessages : a.markdownUserMessages,
+    conversationClassName: cx(a.conversationClassName, b.conversationClassName),
+    conversationContentClassName: cx(
+      a.conversationContentClassName,
+      b.conversationContentClassName,
+    ),
+    promptInputClassName: cx(a.promptInputClassName, b.promptInputClassName),
+    promptFormClassName: cx(a.promptFormClassName, b.promptFormClassName),
+    promptSuggestionsClassName: cx(
+      a.promptSuggestionsClassName,
+      b.promptSuggestionsClassName,
+    ),
+    promptBodyClassName: cx(a.promptBodyClassName, b.promptBodyClassName),
+    promptTextareaClassName: cx(a.promptTextareaClassName, b.promptTextareaClassName),
+    promptFooterClassName: cx(a.promptFooterClassName, b.promptFooterClassName),
+    promptSubmitClassName: cx(a.promptSubmitClassName, b.promptSubmitClassName),
+    promptSubmitLabel: b.promptSubmitLabel !== undefined ? b.promptSubmitLabel : a.promptSubmitLabel,
+    userMessageClassName: cx(a.userMessageClassName, b.userMessageClassName),
+    assistantMessageClassName: cx(a.assistantMessageClassName, b.assistantMessageClassName),
+    userBubbleClassName: cx(a.userBubbleClassName, b.userBubbleClassName),
+    assistantBubbleClassName: cx(a.assistantBubbleClassName, b.assistantBubbleClassName),
+    userMessageResponseClassName: cx(
+      a.userMessageResponseClassName,
+      b.userMessageResponseClassName,
+    ),
+    assistantMessageResponseClassName: cx(
+      a.assistantMessageResponseClassName,
+      b.assistantMessageResponseClassName,
+    ),
+  };
+}
+
+function DefaultPromptSuggestions({
+  className,
+  children,
+}: {
+  className?: string;
+  children?: ReactNode;
+}) {
+  return (
+    <div className={cx("sunny-chat-prompt-suggestions", className)}>
+      {children}
+    </div>
+  );
+}
 
 export function sunnyChatAiElementsRenderers(
   slots: SunnyChatAiElementsSlots,
@@ -177,7 +275,9 @@ export function sunnyChatAiElementsRenderers(
             className={options?.conversationClassName}
             role="log"
           >
-            <ConversationContent>
+            <ConversationContent
+              className={options?.conversationContentClassName}
+            >
               {messages.map((m, i) => {
                 const awaitingFirstChunk =
                   ctx.loading &&
@@ -186,8 +286,22 @@ export function sunnyChatAiElementsRenderers(
                   !m.content.trim();
 
                 return (
-                <Message key={i} from={m.role}>
-                  <MessageContent>
+                <Message
+                  key={i}
+                  from={m.role}
+                  className={
+                    m.role === "user"
+                      ? options?.userMessageClassName
+                      : options?.assistantMessageClassName
+                  }
+                >
+                  <MessageContent
+                    className={
+                      m.role === "user"
+                        ? options?.userBubbleClassName
+                        : options?.assistantBubbleClassName
+                    }
+                  >
                     {m.role === "assistant" &&
                     m.toolInvocations &&
                     m.toolInvocations.length > 0
@@ -212,7 +326,15 @@ export function sunnyChatAiElementsRenderers(
                         <ChatPendingReply />
                       )
                     ) : m.role === "assistant" || markdownUser ? (
-                      <MessageResponse>{m.content}</MessageResponse>
+                      <MessageResponse
+                        className={
+                          m.role === "user"
+                            ? options?.userMessageResponseClassName
+                            : options?.assistantMessageResponseClassName
+                        }
+                      >
+                        {m.content}
+                      </MessageResponse>
                     ) : (
                       <span style={{ whiteSpace: "pre-wrap" }}>{m.content}</span>
                     )}
@@ -247,28 +369,37 @@ export function sunnyChatAiElementsRenderers(
         PromptInputSubmit,
       } = slots;
       const Tools = slots.PromptInputTools;
+      const SuggestionsWrap = slots.PromptSuggestions ?? DefaultPromptSuggestions;
 
       return (
         <PromptInput
-          className={options?.promptInputClassName}
+          className={cx(options?.promptInputClassName, options?.promptFormClassName)}
           onSubmit={({ text }) => {
             const trimmed = text.trim();
             if (!trimmed || loading) return;
             void sendText(trimmed);
           }}
         >
-          {quickSlot}
-          <PromptInputBody>
+          {quickSlot ? (
+            <SuggestionsWrap className={options?.promptSuggestionsClassName}>
+              {quickSlot}
+            </SuggestionsWrap>
+          ) : null}
+          <PromptInputBody className={options?.promptBodyClassName}>
             <PromptInputTextarea
               placeholder={composerPlaceholder}
               disabled={loading}
+              className={options?.promptTextareaClassName}
             />
-            <PromptInputFooter>
+            <PromptInputFooter className={options?.promptFooterClassName}>
               {Tools ? <Tools /> : null}
               <PromptInputSubmit
                 disabled={loading}
                 status={loading ? "streaming" : undefined}
-              />
+                className={options?.promptSubmitClassName}
+              >
+                {options?.promptSubmitLabel ?? "Send"}
+              </PromptInputSubmit>
             </PromptInputFooter>
           </PromptInputBody>
         </PromptInput>
