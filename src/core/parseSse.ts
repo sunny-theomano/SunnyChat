@@ -1,6 +1,11 @@
 import type { ParseChunkResult, StreamEventPayload } from "./types.js";
 
-/** Default Sunny backend: TeamRunContent / TeamRunCompleted. */
+/**
+ * Default Sunny backend: TeamRunContent / TeamRunCompleted.
+ *
+ * Extend in your app for tools / citations, e.g. return `{ kind: "assistant_tool", tool: { name: "search", state: "pending" } }`
+ * or `{ kind: "assistant_sources", sources: [{ title: "Docs", url: "https://..." }] }` from your SSE `event` payloads.
+ */
 export function defaultParseChunk(json: StreamEventPayload): ParseChunkResult {
   const event = typeof json.event === "string" ? json.event : "";
   if (event === "TeamRunContent") {

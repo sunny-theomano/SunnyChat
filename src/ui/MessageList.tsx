@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { ChatPendingReply } from "./ChatPendingReply.js";
 import { useMarkedHtml } from "./markdown.js";
 
 const ROOT = "sunny-chat";
@@ -14,6 +15,8 @@ export type MessageListUi = {
 
 export type MessageListProps = {
   messages: { role: "user" | "assistant"; content: string }[];
+  /** When true, the last assistant bubble shows a typing indicator until content arrives. */
+  loading?: boolean;
   renderAssistantContent?: (text: string) => ReactNode;
   /** Sent (user) bubble body; default is plain text in `.sunny-chat__text` */
   renderUserContent?: (text: string) => ReactNode;
@@ -26,17 +29,27 @@ function cx(...parts: (string | undefined)[]) {
 
 export function MessageList({
   messages,
+  loading = false,
   renderAssistantContent,
   renderUserContent,
   ui,
 }: MessageListProps) {
+  const lastIdx = messages.length - 1;
+
   return (
     <div
       className={cx(`${ROOT}__messages`, ui?.className)}
       role="log"
       aria-live="polite"
     >
-      {messages.map((m, i) => (
+      {messages.map((m, i) => {
+        const awaitingFirstChunk =
+          Boolean(loading) &&
+          i === lastIdx &&
+          m.role === "assistant" &&
+          !m.content.trim();
+
+        return (
         <div
           key={i}
           className={cx(
@@ -55,7 +68,9 @@ export function MessageList({
             )}
           >
             {m.role === "assistant" ? (
-              renderAssistantContent ? (
+              awaitingFirstChunk ? (
+                <ChatPendingReply />
+              ) : renderAssistantContent ? (
                 renderAssistantContent(m.content)
               ) : (
                 <AssistantHtml content={m.content} />
@@ -67,7 +82,8 @@ export function MessageList({
             )}
           </div>
         </div>
-      ))}
+        );
+      })}
     </div>
   );
 }

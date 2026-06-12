@@ -17,6 +17,8 @@ export type StreamChatParams = {
   fetchImpl?: typeof fetch;
   parseChunk?: (json: StreamEventPayload) => ParseChunkResult;
   onDelta: (text: string) => void;
+  /** Called for every parsed SSE object (deltas, sources, tools, ignore). */
+  onParseChunk?: (result: ParseChunkResult) => void;
   onComplete?: () => void;
 };
 
@@ -55,6 +57,7 @@ export async function streamChatResponse(params: StreamChatParams): Promise<void
         if (!block || typeof block !== "object") continue;
         const json = block as StreamEventPayload;
         const r = parseChunk(json);
+        params.onParseChunk?.(r);
         if (r.kind === "assistant_delta") params.onDelta(r.text);
       }
     }
@@ -64,6 +67,7 @@ export async function streamChatResponse(params: StreamChatParams): Promise<void
       try {
         const json = JSON.parse(tail) as StreamEventPayload;
         const r = parseChunk(json);
+        params.onParseChunk?.(r);
         if (r.kind === "assistant_delta") params.onDelta(r.text);
       } catch {
         // incomplete tail — ignore
