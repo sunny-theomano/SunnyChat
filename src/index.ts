@@ -62,3 +62,9 @@ export {
 export type { StreamChatBody, StreamChatParams } from "./core/streamChat.js";
 
 export { useMarkedHtml } from "./ui/markdown.js";
+
+export {
+  ConversationScrollProvider,
+  useConversationScrollState,
+} from "./ui/conversationScroll.js";
+export type { ConversationScrollState } from "./ui/conversationScroll.js";

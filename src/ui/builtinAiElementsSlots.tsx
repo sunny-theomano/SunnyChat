@@ -10,6 +10,7 @@ import {
 import type { CSSProperties, FormEvent, ReactNode } from "react";
 import type { ChatSource, ChatToolInvocation } from "../core/types.js";
 import { ChatPendingReply } from "./ChatPendingReply.js";
+import { useConversationScrollState } from "./conversationScroll.js";
 import { useMarkedHtml } from "./markdown.js";
 import {
   mergeSunnyChatAiElementsOptions,
@@ -317,7 +318,7 @@ function BuiltinConversation({
 }) {
   const scrollRef = useRef<HTMLDivElement | null>(null);
   const [atBottom, setAtBottom] = useState(true);
-  const stickToBottomRef = useRef(true);
+  const stickToBottomRef = useRef(false);
 
   const checkBottom = useCallback(() => {
     const el = scrollRef.current;
@@ -371,15 +372,31 @@ function BuiltinConversationContent({
     throw new Error("sunny-chat: ConversationContent must be inside Conversation");
   }
   const { scrollRef, checkBottom, stickToBottomRef } = ctx;
+  const { messageCount, streaming } = useConversationScrollState();
+  const prevMessageCountRef = useRef(messageCount);
 
   useLayoutEffect(() => {
     const el = scrollRef.current;
     if (!el) return;
-    if (stickToBottomRef.current) {
+
+    const countChanged = messageCount !== prevMessageCountRef.current;
+    prevMessageCountRef.current = messageCount;
+
+    if (countChanged) {
+      el.scrollTop = el.scrollHeight;
+      stickToBottomRef.current = false;
+    } else if (!streaming && stickToBottomRef.current) {
       el.scrollTop = el.scrollHeight;
     }
     checkBottom();
-  }, [children, scrollRef, checkBottom, stickToBottomRef]);
+  }, [
+    children,
+    messageCount,
+    streaming,
+    scrollRef,
+    checkBottom,
+    stickToBottomRef,
+  ]);
 
   return (
     <div

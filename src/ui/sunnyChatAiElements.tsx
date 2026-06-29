@@ -8,6 +8,7 @@ import type {
 import { SunnyChat } from "./SunnyChat.js";
 import type { SunnyChatMessageListContext, SunnyChatProps } from "./SunnyChat.js";
 import { ChatPendingReply } from "./ChatPendingReply.js";
+import { ConversationScrollProvider } from "./conversationScroll.js";
 
 function DefaultSourcesList({ sources }: { sources: ChatSource[] }) {
   return (
@@ -263,22 +264,26 @@ export function sunnyChatAiElementsRenderers(
       const lastIdx = messages.length - 1;
 
       return (
-        <div
-          style={{
-            flex: 1,
-            minHeight: 0,
-            display: "flex",
-            flexDirection: "column",
-          }}
+        <ConversationScrollProvider
+          messageCount={messages.length}
+          streaming={ctx.loading}
         >
-          <Conversation
-            className={options?.conversationClassName}
-            role="log"
+          <div
+            style={{
+              flex: 1,
+              minHeight: 0,
+              display: "flex",
+              flexDirection: "column",
+            }}
           >
-            <ConversationContent
-              className={options?.conversationContentClassName}
+            <Conversation
+              className={options?.conversationClassName}
+              role="log"
             >
-              {messages.map((m, i) => {
+              <ConversationContent
+                className={options?.conversationContentClassName}
+              >
+                {messages.map((m, i) => {
                 const awaitingFirstChunk =
                   ctx.loading &&
                   i === lastIdx &&
@@ -350,9 +355,10 @@ export function sunnyChatAiElementsRenderers(
                 );
               })}
             </ConversationContent>
-            {ScrollBtn ? <ScrollBtn /> : null}
-          </Conversation>
-        </div>
+              {ScrollBtn ? <ScrollBtn /> : null}
+            </Conversation>
+          </div>
+        </ConversationScrollProvider>
       );
     },
     renderComposer({
