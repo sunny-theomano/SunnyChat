@@ -344,3 +344,28 @@ Default bubbles run **marked** → **DOMPurify** and open links in a new tab. Ov
 ## License
 
 MIT
+
+
+## Realtime Voice
+
+SunnyChat now ships an additive realtime hook for voice-first chat surfaces.
+
+```tsx
+import { useRealtimeChatSession } from "sunny-chat";
+
+const chat = useRealtimeChatSession({
+  getUserId: () => "demo-user",
+  getSessionToken: async (userId) => {
+    const res = await fetch("/api/voice/session", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ user_id: userId }),
+    });
+    const data = await res.json();
+    return data.value ?? data.client_secret?.value ?? "";
+  },
+  initialInstructions: "Greet the user and ask how you can help.",
+});
+```
+
+The new [`examples/realtime-voice`](./examples/realtime-voice/README.md) app shows a full chat UI with a text composer and a live mic/session toggle built on top of the hook.

@@ -1,7 +1,7 @@
 {
   "name": "sunny-chat",
   "version": "0.1.0",
-  "description": "Streaming chat widget for React — transport, history merge, SSE parsing, and optional UI (Sunny-style contract).",
+  "description": "Streaming chat widget for React \u2014 transport, history merge, SSE parsing, and optional UI (Sunny-style contract).",
   "license": "MIT",
   "repository": {
     "type": "git",
@@ -30,7 +30,10 @@
     "dev": "tsup --watch",
     "typecheck": "tsc --noEmit",
     "prepare": "npm run build",
-    "playground": "npm run dev --prefix examples/playground"
+    "playground": "npm run dev --prefix examples/playground",
+    "test": "npm run build && node --test tests/*.test.mjs",
+    "voice-example": "npm run voice-example:setup && npm run dev --prefix examples/realtime-voice",
+    "voice-example:setup": "npm install --prefix examples/realtime-voice"
   },
   "peerDependencies": {
     "react": ">=18.0.0",

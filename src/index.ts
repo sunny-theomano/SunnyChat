@@ -71,3 +71,26 @@ export {
 } from "./ui/conversationScroll.js";
 export type { ConversationScrollState } from "./ui/conversationScroll.js";
 export type { SunnyChatConversationScrollProps } from "./ui/conversationScroll.js";
+
+
+export { createRealtimeChatSession } from "./realtime/session.js";
+export { useRealtimeChatSession } from "./react/useRealtimeChatSession.js";
+export type {
+  UseRealtimeChatSessionConfig,
+} from "./react/useRealtimeChatSession.js";
+export type {
+  RealtimeAudioElementLike,
+  RealtimeChatAnalyticsContext,
+  RealtimeChatAnalyticsEvent,
+  RealtimeChatSession,
+  RealtimeChatSessionConfig,
+  RealtimeChatSessionSnapshot,
+  RealtimeConnectionState,
+  RealtimeDataChannelLike,
+  RealtimeMediaStreamLike,
+  RealtimeMediaTrackLike,
+  RealtimePeerConnectionLike,
+  RealtimeToolHandler,
+  RealtimeToolHandlerContext,
+  RealtimeTrackEventLike,
+} from "./realtime/types.js";

@@ -1,0 +1,230 @@
+:root {
+  font-family: "Outfit", "Avenir Next", "Segoe UI", sans-serif;
+  color: #f4efe6;
+  background: radial-gradient(circle at top, #1e3a5f 0%, #09131f 60%, #060b13 100%);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  background: transparent;
+}
+
+button,
+input,
+textarea {
+  font: inherit;
+}
+
+.voice-example {
+  min-height: 100vh;
+  padding: 32px 20px;
+}
+
+.voice-example__shell {
+  width: min(980px, 100%);
+  margin: 0 auto;
+  display: grid;
+  gap: 18px;
+}
+
+.voice-example__header {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  align-items: flex-start;
+}
+
+.voice-example__eyebrow {
+  margin: 0 0 8px;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  font-size: 12px;
+  color: #7dd3fc;
+}
+
+.voice-example__header h1 {
+  margin: 0;
+  font-size: clamp(32px, 5vw, 54px);
+  line-height: 0.95;
+}
+
+.voice-example__subhead {
+  margin: 12px 0 0;
+  max-width: 640px;
+  color: rgba(244, 239, 230, 0.78);
+}
+
+.voice-example__status {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(8, 15, 26, 0.5);
+  white-space: nowrap;
+}
+
+.voice-example__statusDot {
+  width: 10px;
+  height: 10px;
+  border-radius: 999px;
+  background: #6b7280;
+}
+
+.voice-example__status--connecting .voice-example__statusDot {
+  background: #f59e0b;
+}
+
+.voice-example__status--listening .voice-example__statusDot {
+  background: #22c55e;
+}
+
+.voice-example__status--speaking .voice-example__statusDot {
+  background: #38bdf8;
+}
+
+.voice-example__status--error .voice-example__statusDot {
+  background: #fb7185;
+}
+
+.voice-example__config,
+.voice-example__card {
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(8, 15, 26, 0.74);
+  backdrop-filter: blur(18px);
+  box-shadow: 0 30px 80px rgba(0, 0, 0, 0.32);
+}
+
+.voice-example__config {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+  padding: 16px;
+  border-radius: 24px;
+}
+
+.voice-example__config label {
+  display: grid;
+  gap: 8px;
+}
+
+.voice-example__config span {
+  font-size: 13px;
+  color: rgba(244, 239, 230, 0.74);
+}
+
+.voice-example__config input {
+  width: 100%;
+  border: 1px solid rgba(125, 211, 252, 0.18);
+  background: rgba(6, 11, 19, 0.84);
+  color: #f4efe6;
+  border-radius: 14px;
+  padding: 12px 14px;
+}
+
+.voice-example__mic {
+  align-self: end;
+  height: 48px;
+  border: none;
+  border-radius: 16px;
+  background: linear-gradient(135deg, #7dd3fc, #38bdf8);
+  color: #082032;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.voice-example__mic.is-live {
+  background: linear-gradient(135deg, #fca5a5, #fb7185);
+  color: #fff7ed;
+}
+
+.voice-example__error {
+  margin: 0;
+  padding: 14px 16px;
+  border-radius: 16px;
+  background: rgba(190, 24, 93, 0.18);
+  border: 1px solid rgba(251, 113, 133, 0.35);
+  color: #ffd6df;
+}
+
+.voice-example__card {
+  border-radius: 30px;
+  overflow: hidden;
+  min-height: 70vh;
+  display: grid;
+  grid-template-rows: minmax(0, 1fr) auto;
+}
+
+.voice-example__transcript {
+  padding: 24px;
+  min-height: 0;
+  overflow: auto;
+  background:
+    radial-gradient(circle at top right, rgba(56, 189, 248, 0.12), transparent 32%),
+    linear-gradient(180deg, rgba(8, 15, 26, 0.32), rgba(8, 15, 26, 0.84));
+}
+
+.voice-example__messages {
+  gap: 14px;
+}
+
+.voice-example__bubble {
+  border-radius: 22px;
+  padding: 14px 16px;
+  max-width: min(82%, 560px);
+}
+
+.voice-example__bubble--assistant {
+  background: rgba(17, 24, 39, 0.86);
+  border: 1px solid rgba(125, 211, 252, 0.1);
+  color: #eff6ff;
+}
+
+.voice-example__bubble--user {
+  background: linear-gradient(135deg, #0ea5e9, #2563eb);
+  color: white;
+}
+
+.voice-example__composerWrap {
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  padding: 16px;
+  background: rgba(6, 11, 19, 0.92);
+}
+
+.voice-example__composer {
+  padding: 0;
+  background: transparent;
+  border: 0;
+}
+
+.voice-example__input {
+  min-height: 56px;
+  background: rgba(17, 24, 39, 0.96);
+  color: #f4efe6;
+  border-color: rgba(125, 211, 252, 0.16);
+}
+
+.voice-example__send {
+  min-width: 92px;
+  background: linear-gradient(135deg, #f97316, #fb7185);
+}
+
+@media (max-width: 720px) {
+  .voice-example__header {
+    flex-direction: column;
+  }
+
+  .voice-example__config {
+    grid-template-columns: 1fr;
+  }
+
+  .voice-example__bubble {
+    max-width: 92%;
+  }
+}
