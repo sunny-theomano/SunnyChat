@@ -5,6 +5,14 @@ export type ConversationScrollState = {
   streaming: boolean;
 };
 
+/** Pass on {@link builtinAiElementsSlots} `Conversation` when composing headless UI with `useChatSession`. */
+export type SunnyChatConversationScrollProps = {
+  /** Set to `messages.length` so scroll runs only when new rows are added. */
+  messageCount?: number;
+  /** Set to `loading` from `useChatSession` while the assistant stream is active. */
+  streaming?: boolean;
+};
+
 const ConversationScrollContext = createContext<ConversationScrollState>({
   messageCount: 0,
   streaming: false,

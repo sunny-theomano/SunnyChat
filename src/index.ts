@@ -24,12 +24,14 @@ export type {
 
 export {
   builtinAiElementsSlots,
+  BuiltinAiElementsMessageList,
   SunnyChatBuiltinAiElements,
 } from "./ui/builtinAiElementsSlots.js";
 export type {
   SunnyChatBuiltinAiElementsProps,
   SunnyChatBuiltinAiElementsUi,
   SunnyChatBuiltinThemeVars,
+  BuiltinAiElementsMessageListProps,
 } from "./ui/builtinAiElementsSlots.js";
 
 export { MessageList } from "./ui/MessageList.js";
@@ -68,3 +70,4 @@ export {
   useConversationScrollState,
 } from "./ui/conversationScroll.js";
 export type { ConversationScrollState } from "./ui/conversationScroll.js";
+export type { SunnyChatConversationScrollProps } from "./ui/conversationScroll.js";

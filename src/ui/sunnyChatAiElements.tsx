@@ -8,7 +8,10 @@ import type {
 import { SunnyChat } from "./SunnyChat.js";
 import type { SunnyChatMessageListContext, SunnyChatProps } from "./SunnyChat.js";
 import { ChatPendingReply } from "./ChatPendingReply.js";
-import { ConversationScrollProvider } from "./conversationScroll.js";
+import {
+  ConversationScrollProvider,
+  type SunnyChatConversationScrollProps,
+} from "./conversationScroll.js";
 
 function DefaultSourcesList({ sources }: { sources: ChatSource[] }) {
   return (
@@ -86,11 +89,13 @@ function DefaultToolBlock({ invocation: inv }: { invocation: ChatToolInvocation 
  * Paths are typically `@/components/ai-elements/...` — see https://elements.ai-sdk.dev
  */
 export type SunnyChatAiElementsSlots = {
-  Conversation: ComponentType<{
-    className?: string;
-    children?: ReactNode;
-    role?: string;
-  }>;
+  Conversation: ComponentType<
+    {
+      className?: string;
+      children?: ReactNode;
+      role?: string;
+    } & SunnyChatConversationScrollProps
+  >;
   ConversationContent: ComponentType<{
     className?: string;
     children?: ReactNode;
@@ -279,6 +284,8 @@ export function sunnyChatAiElementsRenderers(
             <Conversation
               className={options?.conversationClassName}
               role="log"
+              messageCount={messages.length}
+              streaming={ctx.loading}
             >
               <ConversationContent
                 className={options?.conversationContentClassName}
