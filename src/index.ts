@@ -24,12 +24,14 @@ export type {
 
 export {
   builtinAiElementsSlots,
+  BuiltinAiElementsMessageList,
   SunnyChatBuiltinAiElements,
 } from "./ui/builtinAiElementsSlots.js";
 export type {
   SunnyChatBuiltinAiElementsProps,
   SunnyChatBuiltinAiElementsUi,
   SunnyChatBuiltinThemeVars,
+  BuiltinAiElementsMessageListProps,
 } from "./ui/builtinAiElementsSlots.js";
 
 export { MessageList } from "./ui/MessageList.js";
@@ -62,3 +64,10 @@ export {
 export type { StreamChatBody, StreamChatParams } from "./core/streamChat.js";
 
 export { useMarkedHtml } from "./ui/markdown.js";
+
+export {
+  ConversationScrollProvider,
+  useConversationScrollState,
+} from "./ui/conversationScroll.js";
+export type { ConversationScrollState } from "./ui/conversationScroll.js";
+export type { SunnyChatConversationScrollProps } from "./ui/conversationScroll.js";

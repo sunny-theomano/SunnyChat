@@ -29,7 +29,8 @@
     "build": "tsup",
     "dev": "tsup --watch",
     "typecheck": "tsc --noEmit",
-    "prepare": "npm run build"
+    "prepare": "npm run build",
+    "playground": "npm run dev --prefix examples/playground"
   },
   "peerDependencies": {
     "react": ">=18.0.0",

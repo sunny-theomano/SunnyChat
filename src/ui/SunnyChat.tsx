@@ -263,6 +263,7 @@ export function SunnyChat(props: SunnyChatProps) {
 
   const chat = useChatSession(sessionCfg);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const prevMessageCountRef = useRef(0);
 
   useEffect(() => {
     if (props.defaultChrome !== false) injectDefaultStylesOnce();
@@ -272,8 +273,11 @@ export function SunnyChat(props: SunnyChatProps) {
     if (renderMessageList) return;
     const el = scrollRef.current;
     if (!el) return;
+    const count = chat.messages.length;
+    if (count === prevMessageCountRef.current) return;
+    prevMessageCountRef.current = count;
     el.scrollTop = el.scrollHeight;
-  }, [chat.messages, chat.loading, chat.isOpen, renderMessageList]);
+  }, [chat.messages, chat.isOpen, renderMessageList]);
 
   const quickSlot =
     chat.showQuickReplies && chat.quickQuestions.length > 0 ? (
