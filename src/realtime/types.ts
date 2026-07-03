@@ -70,6 +70,13 @@ export type RealtimeToolHandler = (
 
 export type RealtimeChatSessionConfig = {
   getUserId: () => string | null;
+  /**
+   * Backend API origin for voice endpoints (no trailing slash required).
+   * When set, the session uses `POST ${baseUrl}/api/voice/session` unless
+   * `getSessionToken` or `sessionTokenEndpoint` is provided, and default
+   * voice tool handlers are merged with `toolHandlers`.
+   */
+  baseUrl?: string;
   sessionIdSuffix?: string;
   teamName?: string;
   getSessionToken?: (userId: string) => Promise<string>;

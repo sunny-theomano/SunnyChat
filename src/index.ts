@@ -74,6 +74,16 @@ export type { SunnyChatConversationScrollProps } from "./ui/conversationScroll.j
 
 
 export { createRealtimeChatSession } from "./realtime/session.js";
+export {
+  createDefaultVoiceToolHandlers,
+  resolveVoiceDesignDataUrl,
+  resolveVoiceFinancingDataUrl,
+  resolveVoiceMemorySaveUrl,
+  resolveVoiceMemorySearchUrl,
+  resolveVoiceSearchUrl,
+  resolveVoiceSessionUrl,
+} from "./realtime/voiceApi.js";
+export type { VoiceApiRequestOptions } from "./realtime/voiceApi.js";
 export { useRealtimeChatSession } from "./react/useRealtimeChatSession.js";
 export type {
   UseRealtimeChatSessionConfig,

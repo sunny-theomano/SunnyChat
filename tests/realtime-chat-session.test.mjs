@@ -1,6 +1,10 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { createRealtimeChatSession } from "../dist/index.js";
+import {
+  createDefaultVoiceToolHandlers,
+  createRealtimeChatSession,
+  resolveVoiceSessionUrl,
+} from "../dist/index.js";
 
 class FakeDataChannel {
   constructor() {
@@ -127,6 +131,69 @@ async function flush() {
   await new Promise((resolve) => setTimeout(resolve, 0));
 }
 
+test("resolveVoiceSessionUrl normalizes trailing slashes", () => {
+  assert.equal(
+    resolveVoiceSessionUrl("https://api.example.com/"),
+    "https://api.example.com/api/voice/session",
+  );
+  assert.equal(
+    resolveVoiceSessionUrl("https://api.example.com"),
+    "https://api.example.com/api/voice/session",
+  );
+});
+
+test("baseUrl resolves the session token endpoint during connect", async () => {
+  const requests = [];
+  const { session } = createHarness({
+    baseUrl: "https://voice.example.test",
+    getSessionToken: undefined,
+    fetchImpl: async (url, init) => {
+      requests.push({ url: String(url), init });
+      if (String(url) === "https://voice.example.test/api/voice/session") {
+        return {
+          ok: true,
+          json: async () => ({ value: "ephemeral-token" }),
+        };
+      }
+      if (String(url).includes("realtime.example.test")) {
+        return {
+          ok: true,
+          text: async () => "answer-sdp",
+        };
+      }
+      throw new Error(`Unexpected fetch: ${url}`);
+    },
+  });
+
+  await session.connect();
+
+  assert.equal(requests[0]?.url, "https://voice.example.test/api/voice/session");
+  assert.equal(JSON.parse(requests[0]?.init?.body ?? "{}").user_id, "voice-user");
+});
+
+test("default voice tool handlers call the backend base url", async () => {
+  const requests = [];
+  const handlers = createDefaultVoiceToolHandlers({
+    baseUrl: "https://voice.example.test",
+    fetchImpl: async (url, init) => {
+      requests.push({ url: String(url), body: JSON.parse(String(init?.body ?? "{}")) });
+      if (String(url).endsWith("/api/voice/search")) {
+        return {
+          ok: true,
+          json: async () => ({ context: "solar savings info" }),
+        };
+      }
+      throw new Error(`Unexpected fetch: ${url}`);
+    },
+  });
+
+  const result = await handlers.search_docs({ query: "solar savings" }, { userId: "voice-user" });
+
+  assert.equal(result, "solar savings info");
+  assert.equal(requests[0]?.url, "https://voice.example.test/api/voice/search");
+  assert.deepEqual(requests[0]?.body, { query: "solar savings" });
+});
+
 test("typed sends create a user message and emit realtime events", async () => {
   const { session, channel } = createHarness();
   await session.connect();
@@ -211,6 +278,54 @@ test("tool calls accumulate args, dispatch once, and trigger follow-up response"
       result: "context for solar savings",
     },
   ]);
+});
+
+test("baseUrl default tool handlers are used when toolHandlers is omitted", async () => {
+  const requests = [];
+  const { session, channel } = createHarness({
+    baseUrl: "https://voice.example.test",
+    getSessionToken: async () => "ephemeral-token",
+    toolHandlers: undefined,
+    fetchImpl: async (url, init) => {
+      requests.push({ url: String(url), body: init?.body });
+      if (String(url).endsWith("/api/voice/search")) {
+        return {
+          ok: true,
+          json: async () => ({ context: "from default handler" }),
+        };
+      }
+      if (String(url).includes("realtime.example.test")) {
+        return {
+          ok: true,
+          text: async () => "answer-sdp",
+        };
+      }
+      throw new Error(`Unexpected fetch: ${url}`);
+    },
+  });
+
+  await session.connect();
+  channel.sent.length = 0;
+
+  channel.emitMessage({ type: "response.created" });
+  channel.emitMessage({
+    type: "response.function_call_arguments.done",
+    call_id: "call-2",
+    name: "search_docs",
+    arguments: '{"query":"battery backup"}',
+  });
+  channel.emitMessage({
+    type: "response.done",
+    response: {
+      output: [{ type: "function_call", call_id: "call-2" }],
+    },
+  });
+
+  await flush();
+
+  const searchRequest = requests.find((request) => request.url.endsWith("/api/voice/search"));
+  assert.equal(searchRequest?.url, "https://voice.example.test/api/voice/search");
+  assert.equal(session.getSnapshot().toolInvocations[0]?.result, "from default handler");
 });
 
 test("disconnect stops tracks and connection state reacts to speaking/listening transitions", async () => {

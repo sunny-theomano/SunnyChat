@@ -30,4 +30,4 @@ This example reuses the same backend contract as `agno-agents/templates/voice_ra
 - `POST /api/voice/design_data`
 - `POST /api/voice/financing_data`
 
-Set `VITE_API_BASE_URL` or edit the API Base URL field in the UI if your backend is not running on `http://localhost:7777`.
+Set `VITE_API_BASE_URL` or edit the API Base URL field in the UI if your backend is not running on `http://localhost:7777`. The example passes that value as `baseUrl` to `useRealtimeChatSession`.

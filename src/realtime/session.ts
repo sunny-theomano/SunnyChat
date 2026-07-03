@@ -1,5 +1,6 @@
 import { buildSessionId, generateAnonymousId } from "../core/session.js";
 import type { ChatMessage, ChatToolInvocation } from "../core/types.js";
+import { createDefaultVoiceToolHandlers, resolveVoiceSessionUrl } from "./voiceApi.js";
 import type {
   RealtimeAudioElementLike,
   RealtimeChatSession,
@@ -9,6 +10,7 @@ import type {
   RealtimeDataChannelLike,
   RealtimeMediaStreamLike,
   RealtimePeerConnectionLike,
+  RealtimeToolHandler,
 } from "./types.js";
 
 const DEFAULT_OPENAI_BASE_URL = "https://api.openai.com/v1/realtime/calls";
@@ -143,6 +145,18 @@ export function createRealtimeChatSession(initialConfig: RealtimeChatSessionConf
 
   const fetchImpl = () => config.fetchImpl ?? fetch;
 
+  const getEffectiveToolHandlers = (): Record<string, RealtimeToolHandler> => {
+    const custom = config.toolHandlers ?? {};
+    if (!config.baseUrl?.trim()) return custom;
+    return {
+      ...createDefaultVoiceToolHandlers({
+        baseUrl: config.baseUrl,
+        fetchImpl: fetchImpl(),
+      }),
+      ...custom,
+    };
+  };
+
   const getEffectiveUserId = () => {
     const authUserId = config.getUserId()?.trim() || null;
     return authUserId ?? anonymousId;
@@ -252,7 +266,7 @@ export function createRealtimeChatSession(initialConfig: RealtimeChatSessionConf
       args = {};
     }
 
-    const handler = config.toolHandlers?.[name];
+    const handler = getEffectiveToolHandlers()[name];
     let output = `Unknown tool: ${name}`;
     let toolState: ChatToolInvocation["state"] = "error";
     try {
@@ -445,9 +459,10 @@ export function createRealtimeChatSession(initialConfig: RealtimeChatSessionConf
         const token = config.getSessionToken
           ? await config.getSessionToken(effectiveUserId)
           : await (async () => {
-              const endpoint = config.sessionTokenEndpoint;
+              const endpoint = config.sessionTokenEndpoint
+                ?? (config.baseUrl?.trim() ? resolveVoiceSessionUrl(config.baseUrl) : undefined);
               if (!endpoint) {
-                throw new Error("Missing getSessionToken or sessionTokenEndpoint");
+                throw new Error("Missing getSessionToken, sessionTokenEndpoint, or baseUrl");
               }
               const res = await fetchImpl()(buildSessionTokenRequestUrl(endpoint), {
                 method: "POST",

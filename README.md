@@ -354,18 +354,12 @@ SunnyChat now ships an additive realtime hook for voice-first chat surfaces.
 import { useRealtimeChatSession } from "sunny-chat";
 
 const chat = useRealtimeChatSession({
+  baseUrl: import.meta.env.VITE_API_BASE,
   getUserId: () => "demo-user",
-  getSessionToken: async (userId) => {
-    const res = await fetch("/api/voice/session", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ user_id: userId }),
-    });
-    const data = await res.json();
-    return data.value ?? data.client_secret?.value ?? "";
-  },
   initialInstructions: "Greet the user and ask how you can help.",
 });
 ```
+
+Pass **`baseUrl`** (API origin only, same as text chat) and the hook will call `POST ${baseUrl}/api/voice/session` for the ephemeral token and wire the default voice RAG tool handlers (`search_docs`, memory, design/financing data, etc.). Override individual tools with `toolHandlers`, or supply `getSessionToken` / `sessionTokenEndpoint` if your backend differs.
 
 The new [`examples/realtime-voice`](./examples/realtime-voice/README.md) app shows a full chat UI with a text composer and a live mic/session toggle built on top of the hook.
