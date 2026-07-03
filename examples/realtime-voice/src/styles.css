@@ -191,6 +191,48 @@ textarea {
   color: white;
 }
 
+.voice-example__tool {
+  margin-bottom: 10px;
+  padding: 8px 10px;
+  border-radius: 12px;
+  border: 1px solid rgba(125, 211, 252, 0.18);
+  background: rgba(15, 23, 42, 0.72);
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.voice-example__toolHead {
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+
+.voice-example__toolState {
+  font-weight: 500;
+  margin-right: 8px;
+  text-transform: capitalize;
+}
+
+.voice-example__toolState--pending {
+  color: #fbbf24;
+}
+
+.voice-example__toolState--complete {
+  color: #34d399;
+}
+
+.voice-example__toolState--error {
+  color: #fb7185;
+}
+
+.voice-example__toolPre {
+  margin: 0;
+  white-space: pre-wrap;
+  word-break: break-word;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 11px;
+  color: rgba(226, 232, 240, 0.88);
+}
+
 .voice-example__composerWrap {
   border-top: 1px solid rgba(255, 255, 255, 0.08);
   padding: 16px;

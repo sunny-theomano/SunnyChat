@@ -118,6 +118,27 @@ const defaultCss = `
   background: var(--chat-assistant-bg);
   color: var(--chat-assistant-fg);
 }
+.${ROOT}__tool {
+  margin-bottom: 8px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  border: 1px solid var(--chat-panel-border, #e4e4e7);
+  background: #fafafa;
+  font-size: 12px;
+  line-height: 1.4;
+}
+.${ROOT}__toolHead { font-weight: 600; margin-bottom: 4px; }
+.${ROOT}__toolState { font-weight: 500; margin-right: 8px; }
+.${ROOT}__toolState--pending { color: #a16207; }
+.${ROOT}__toolState--complete { color: #15803d; }
+.${ROOT}__toolState--error { color: #b91c1c; }
+.${ROOT}__toolPre {
+  margin: 0;
+  white-space: pre-wrap;
+  word-break: break-word;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 11px;
+}
 .${ROOT}__md p { margin: 0 0 0.5em; }
 .${ROOT}__md p:last-child { margin-bottom: 0; }
 .${ROOT}__md a { color: inherit; text-decoration: underline; }
