@@ -278,6 +278,45 @@ test("tool calls accumulate args, dispatch once, and trigger follow-up response"
       result: "context for solar savings",
     },
   ]);
+  assert.deepEqual(session.getSnapshot().messages, []);
+});
+
+test("tool calls do not create transcript bubbles or attach toolInvocations to messages", async () => {
+  const { session, channel } = createHarness({
+    toolHandlers: {
+      search_docs: async () => "context",
+    },
+  });
+  await session.connect();
+
+  channel.emitMessage({ type: "response.created" });
+  channel.emitMessage({
+    type: "response.function_call_arguments.delta",
+    call_id: "call-1",
+    name: "search_docs",
+    delta: '{"query":"solar',
+  });
+  channel.emitMessage({
+    type: "response.function_call_arguments.done",
+    call_id: "call-1",
+    name: "search_docs",
+    arguments: '{"query":"solar savings"}',
+  });
+  channel.emitMessage({
+    type: "response.done",
+    response: {
+      output: [{ type: "function_call", call_id: "call-1" }],
+    },
+  });
+
+  await flush();
+
+  const snapshot = session.getSnapshot();
+  assert.equal(snapshot.messages.length, 0);
+  assert.equal(snapshot.toolInvocations.length, 1);
+  for (const message of snapshot.messages) {
+    assert.equal(message.toolInvocations, undefined);
+  }
 });
 
 test("baseUrl default tool handlers are used when toolHandlers is omitted", async () => {

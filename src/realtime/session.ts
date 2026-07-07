@@ -95,19 +95,9 @@ function upsertToolInvocations(
   return [...list, tool];
 }
 
-function syncLastAssistantTools(
-  messages: ChatMessage[],
-  tools: ChatToolInvocation[],
-): ChatMessage[] {
-  if (messages.length === 0) return messages;
-  const next = ensureAssistantDraft(messages).slice();
-  const last = next[next.length - 1];
-  if (last.role !== "assistant") return next;
-  next[next.length - 1] = {
-    ...last,
-    toolInvocations: tools,
-  };
-  return next;
+/** Voice transcript bubbles — text only; tools stay in `toolInvocations` on the snapshot. */
+function voiceTranscriptMessages(messages: ChatMessage[]): ChatMessage[] {
+  return messages.filter((m) => m.role === "user" || m.content.trim().length > 0);
 }
 
 function buildSessionTokenRequestUrl(endpoint: string): string {
@@ -174,6 +164,7 @@ export function createRealtimeChatSession(initialConfig: RealtimeChatSessionConf
 
   const snapshot = (): RealtimeChatSessionSnapshot => ({
     ...state,
+    messages: voiceTranscriptMessages(state.messages),
     isConnected:
       state.connectionState === "listening" || state.connectionState === "speaking",
     effectiveUserId: getEffectiveUserId(),
@@ -280,20 +271,16 @@ export function createRealtimeChatSession(initialConfig: RealtimeChatSessionConf
       toolState = "error";
     }
 
-    setState((prev) => {
-      const toolInvocations = upsertToolInvocations(prev.toolInvocations, {
+    setState((prev) => ({
+      ...prev,
+      toolInvocations: upsertToolInvocations(prev.toolInvocations, {
         id: callId,
         name,
         state: toolState,
         args,
         result: output,
-      });
-      return {
-        ...prev,
-        toolInvocations,
-        messages: syncLastAssistantTools(prev.messages, toolInvocations),
-      };
-    });
+      }),
+    }));
 
     sendEvent({
       type: "conversation.item.create",
@@ -382,19 +369,15 @@ export function createRealtimeChatSession(initialConfig: RealtimeChatSessionConf
       existing.args += typeof event.delta === "string" ? event.delta : "";
       pendingToolCalls.set(callId, existing);
 
-      setState((prev) => {
-        const toolInvocations = upsertToolInvocations(prev.toolInvocations, {
+      setState((prev) => ({
+        ...prev,
+        toolInvocations: upsertToolInvocations(prev.toolInvocations, {
           id: callId,
           name: existing.name,
           state: "pending",
           result: undefined,
-        });
-        return {
-          ...prev,
-          toolInvocations,
-          messages: syncLastAssistantTools(prev.messages, toolInvocations),
-        };
-      });
+        }),
+      }));
       return;
     }
 
@@ -422,7 +405,6 @@ export function createRealtimeChatSession(initialConfig: RealtimeChatSessionConf
       setState((prev) => ({
         ...prev,
         isResponding: true,
-        messages: ensureAssistantDraft(prev.messages),
       }));
       return;
     }
