@@ -93,17 +93,6 @@ export function App() {
             <MessageList
               messages={chat.messages}
               loading={chat.isResponding}
-              renderToolInvocation={(inv) => (
-                <div className="voice-example__tool">
-                  <div className="voice-example__toolHead">
-                    <span className={`voice-example__toolState voice-example__toolState--${inv.state}`}>
-                      {inv.state}
-                    </span>
-                    <span>{inv.name}</span>
-                  </div>
-                  {inv.result ? <pre className="voice-example__toolPre">{inv.result}</pre> : null}
-                </div>
-              )}
               ui={{
                 className: "voice-example__messages",
                 userBubbleClassName: "voice-example__bubble voice-example__bubble--user",

@@ -1,5 +1,4 @@
 import type { ReactNode } from "react";
-import type { ChatMessage, ChatToolInvocation } from "../core/types.js";
 import { ChatPendingReply } from "./ChatPendingReply.js";
 import { useMarkedHtml } from "./markdown.js";
 
@@ -15,13 +14,12 @@ export type MessageListUi = {
 };
 
 export type MessageListProps = {
-  messages: ChatMessage[];
+  messages: { role: "user" | "assistant"; content: string }[];
   /** When true, the last assistant bubble shows a typing indicator until content arrives. */
   loading?: boolean;
   renderAssistantContent?: (text: string) => ReactNode;
   /** Sent (user) bubble body; default is plain text in `.sunny-chat__text` */
   renderUserContent?: (text: string) => ReactNode;
-  renderToolInvocation?: (invocation: ChatToolInvocation) => ReactNode;
   ui?: MessageListUi;
 };
 
@@ -34,7 +32,6 @@ export function MessageList({
   loading = false,
   renderAssistantContent,
   renderUserContent,
-  renderToolInvocation,
   ui,
 }: MessageListProps) {
   const lastIdx = messages.length - 1;
@@ -46,14 +43,11 @@ export function MessageList({
       aria-live="polite"
     >
       {messages.map((m, i) => {
-        const toolInvocations =
-          m.role === "assistant" && m.toolInvocations?.length ? m.toolInvocations : [];
-        const hasAssistantBody = Boolean(m.content.trim()) || toolInvocations.length > 0;
         const awaitingFirstChunk =
           Boolean(loading) &&
           i === lastIdx &&
           m.role === "assistant" &&
-          !hasAssistantBody;
+          !m.content.trim();
 
         return (
         <div
@@ -76,28 +70,10 @@ export function MessageList({
             {m.role === "assistant" ? (
               awaitingFirstChunk ? (
                 <ChatPendingReply />
+              ) : renderAssistantContent ? (
+                renderAssistantContent(m.content)
               ) : (
-                <>
-                  {toolInvocations.map((inv, ti) =>
-                    renderToolInvocation ? (
-                      <div key={inv.id ?? `${i}-tool-${ti}`}>
-                        {renderToolInvocation(inv)}
-                      </div>
-                    ) : (
-                      <DefaultToolInvocation
-                        key={inv.id ?? `${i}-tool-${ti}`}
-                        invocation={inv}
-                      />
-                    ),
-                  )}
-                  {m.content.trim() ? (
-                    renderAssistantContent ? (
-                      renderAssistantContent(m.content)
-                    ) : (
-                      <AssistantHtml content={m.content} />
-                    )
-                  ) : null}
-                </>
+                <AssistantHtml content={m.content} />
               )
             ) : renderUserContent ? (
               renderUserContent(m.content)
@@ -108,25 +84,6 @@ export function MessageList({
         </div>
         );
       })}
-    </div>
-  );
-}
-
-function DefaultToolInvocation({ invocation: inv }: { invocation: ChatToolInvocation }) {
-  const stateClass =
-    inv.state === "pending"
-      ? `${ROOT}__toolState--pending`
-      : inv.state === "error"
-        ? `${ROOT}__toolState--error`
-        : `${ROOT}__toolState--complete`;
-
-  return (
-    <div className={`${ROOT}__tool`}>
-      <div className={`${ROOT}__toolHead`}>
-        <span className={cx(`${ROOT}__toolState`, stateClass)}>{inv.state}</span>
-        <span>{inv.name}</span>
-      </div>
-      {inv.result ? <pre className={`${ROOT}__toolPre`}>{inv.result}</pre> : null}
     </div>
   );
 }

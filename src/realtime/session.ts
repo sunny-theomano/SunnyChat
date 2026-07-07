@@ -139,8 +139,6 @@ export function createRealtimeChatSession(initialConfig: RealtimeChatSessionConf
   const pendingToolCalls = new Map<string, { name: string; args: string }>();
   const expectedToolCallIds = new Set<string>();
   const completedToolCallIds = new Set<string>();
-  const dispatchedToolCallIds = new Set<string>();
-  const outputItemTypes = new Map<string, string>();
   const assistantBuffers = new Map<string, string>();
   let responseDoneReceived = false;
   let followUpRequested = false;
@@ -231,8 +229,6 @@ export function createRealtimeChatSession(initialConfig: RealtimeChatSessionConf
     pendingToolCalls.clear();
     expectedToolCallIds.clear();
     completedToolCallIds.clear();
-    dispatchedToolCallIds.clear();
-    outputItemTypes.clear();
     assistantBuffers.clear();
     responseDoneReceived = false;
     followUpRequested = false;
@@ -260,27 +256,6 @@ export function createRealtimeChatSession(initialConfig: RealtimeChatSessionConf
       return;
     }
     setState((prev) => ({ ...prev, isResponding: false }));
-  };
-
-  const registerOutputItem = (item: Record<string, unknown> | null | undefined) => {
-    if (!item) return;
-    const itemId = typeof item.id === "string" ? item.id : "";
-    const itemType = typeof item.type === "string" ? item.type : "";
-    if (itemId && itemType) {
-      outputItemTypes.set(itemId, itemType);
-    }
-  };
-
-  const isFunctionCallTextEvent = (event: RealtimeEvent): boolean => {
-    const itemId = typeof event.item_id === "string" ? event.item_id : "";
-    return Boolean(itemId && outputItemTypes.get(itemId) === "function_call");
-  };
-
-  const queueToolDispatch = (callId: string, name: string, argsStr: string) => {
-    if (!callId || dispatchedToolCallIds.has(callId)) return;
-    dispatchedToolCallIds.add(callId);
-    pendingToolCalls.delete(callId);
-    void dispatchTool(callId, name, argsStr);
   };
 
   const dispatchTool = async (callId: string, name: string, argsStr: string) => {
@@ -335,7 +310,6 @@ export function createRealtimeChatSession(initialConfig: RealtimeChatSessionConf
   };
 
   const handleAssistantText = (event: RealtimeEvent, candidateKeys: string[]) => {
-    if (isFunctionCallTextEvent(event)) return;
     const text = resolveText(event, candidateKeys);
     if (!text) return;
     const key = eventOutputKey(event);
@@ -431,7 +405,8 @@ export function createRealtimeChatSession(initialConfig: RealtimeChatSessionConf
         name: typeof event.name === "string" ? event.name : "tool",
         args: "",
       };
-      queueToolDispatch(
+      pendingToolCalls.delete(callId);
+      void dispatchTool(
         callId,
         typeof event.name === "string" ? event.name : existing.name,
         typeof event.arguments === "string" ? event.arguments : existing.args,
@@ -439,36 +414,14 @@ export function createRealtimeChatSession(initialConfig: RealtimeChatSessionConf
       return;
     }
 
-    if (type === "response.output_item.added" || type === "response.output_item.done") {
-      const item =
-        typeof event.item === "object" && event.item ? (event.item as Record<string, unknown>) : null;
-      registerOutputItem(item);
-      const itemType = typeof item?.type === "string" ? item.type : "";
-      if (itemType === "function_call") {
-        const callId = typeof item?.call_id === "string" ? item.call_id : "";
-        const name = typeof item?.name === "string" ? item.name : "tool";
-        const args = typeof item?.arguments === "string" ? item.arguments : "";
-        if (type === "response.output_item.done" && callId) {
-          queueToolDispatch(callId, name, args);
-        }
-        return;
-      }
-      if (itemType === "function_call_output") {
-        return;
-      }
-    }
-
     if (type === "response.created") {
       expectedToolCallIds.clear();
       completedToolCallIds.clear();
-      dispatchedToolCallIds.clear();
-      outputItemTypes.clear();
       responseDoneReceived = false;
       followUpRequested = false;
       setState((prev) => ({
         ...prev,
         isResponding: true,
-        toolInvocations: [],
         messages: ensureAssistantDraft(prev.messages),
       }));
       return;
@@ -480,22 +433,10 @@ export function createRealtimeChatSession(initialConfig: RealtimeChatSessionConf
       const outputItems = Array.isArray(response?.output) ? response.output : [];
       for (const item of outputItems) {
         if (!item || typeof item !== "object") continue;
-        const outputItem = item as Record<string, unknown>;
-        registerOutputItem(outputItem);
-        if (outputItem.type === "function_call" && typeof outputItem.call_id === "string") {
-          const callId = outputItem.call_id;
-          if (!completedToolCallIds.has(callId)) {
-            expectedToolCallIds.add(callId);
-          }
-          if (
-            typeof outputItem.arguments === "string" &&
-            !dispatchedToolCallIds.has(callId)
-          ) {
-            queueToolDispatch(
-              callId,
-              typeof outputItem.name === "string" ? outputItem.name : "tool",
-              outputItem.arguments,
-            );
+        const call = item as { type?: unknown; call_id?: unknown };
+        if (call.type === "function_call" && typeof call.call_id === "string") {
+          if (!completedToolCallIds.has(call.call_id)) {
+            expectedToolCallIds.add(call.call_id);
           }
         }
       }

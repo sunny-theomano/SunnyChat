@@ -257,7 +257,7 @@ test("tool calls accumulate args, dispatch once, and trigger follow-up response"
   channel.emitMessage({
     type: "response.done",
     response: {
-      output: [{ type: "function_call", call_id: "call-1", name: "search_docs", arguments: '{"query":"solar savings"}' }],
+      output: [{ type: "function_call", call_id: "call-1" }],
     },
   });
 
@@ -278,102 +278,6 @@ test("tool calls accumulate args, dispatch once, and trigger follow-up response"
       result: "context for solar savings",
     },
   ]);
-  assert.deepEqual(session.getSnapshot().messages.at(-1)?.toolInvocations, [
-    {
-      id: "call-1",
-      name: "search_docs",
-      state: "complete",
-      args: { query: "solar savings" },
-      result: "context for solar savings",
-    },
-  ]);
-});
-
-test("function call transcript text is not appended to assistant messages", async () => {
-  const { session, channel } = createHarness({
-    toolHandlers: {
-      search_docs: async () => "context",
-    },
-  });
-  await session.connect();
-
-  channel.emitMessage({ type: "response.created" });
-  channel.emitMessage({
-    type: "response.output_item.added",
-    item: {
-      id: "item-fc-1",
-      type: "function_call",
-      call_id: "call-fc-1",
-      name: "search_docs",
-    },
-  });
-  channel.emitMessage({
-    type: "response.output_text.done",
-    item_id: "item-fc-1",
-    text: '{"query":"solar savings"}',
-  });
-  channel.emitMessage({
-    type: "response.function_call_arguments.done",
-    call_id: "call-fc-1",
-    name: "search_docs",
-    arguments: '{"query":"solar savings"}',
-  });
-  channel.emitMessage({
-    type: "response.done",
-    response: {
-      output: [
-        {
-          id: "item-fc-1",
-          type: "function_call",
-          call_id: "call-fc-1",
-          name: "search_docs",
-          arguments: '{"query":"solar savings"}',
-        },
-      ],
-    },
-  });
-
-  await flush();
-
-  const assistant = session.getSnapshot().messages.find((message) => message.role === "assistant");
-  assert.equal(assistant?.content ?? "", "");
-  assert.equal(session.getSnapshot().toolInvocations[0]?.name, "search_docs");
-});
-
-test("tool invocations reset for each new response", async () => {
-  const { session, channel } = createHarness({
-    toolHandlers: {
-      search_docs: async () => "context",
-    },
-  });
-  await session.connect();
-
-  channel.emitMessage({ type: "response.created" });
-  channel.emitMessage({
-    type: "response.function_call_arguments.done",
-    call_id: "call-a",
-    name: "search_docs",
-    arguments: '{"query":"first"}',
-  });
-  channel.emitMessage({
-    type: "response.done",
-    response: { output: [{ type: "function_call", call_id: "call-a", name: "search_docs", arguments: '{"query":"first"}' }] },
-  });
-  await flush();
-
-  channel.emitMessage({ type: "response.created" });
-  channel.emitMessage({
-    type: "response.output_text.done",
-    response_id: "r2",
-    item_id: "a2",
-    text: "Here is your answer.",
-  });
-
-  const snapshot = session.getSnapshot();
-  const last = snapshot.messages.at(-1);
-  assert.equal(snapshot.toolInvocations.length, 0);
-  assert.equal(last?.content, "Here is your answer.");
-  assert.equal(last?.toolInvocations?.[0]?.id, "call-a");
 });
 
 test("baseUrl default tool handlers are used when toolHandlers is omitted", async () => {
