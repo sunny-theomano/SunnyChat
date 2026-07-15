@@ -60,6 +60,7 @@ export function App() {
   return (
     <SunnyChat
       baseUrl={import.meta.env.VITE_API_BASE}
+      apiKey={import.meta.env.VITE_FRONTEND_API_KEY}
       teamName="generac-team"
       sessionIdSuffix="_generac_offer"
       getUserId={() => window.__USER_ID__ ?? null}
@@ -81,7 +82,7 @@ export function App() {
 
 | Prop | Purpose |
 |------|--------|
-| `baseUrl` | API origin only (no `/chat` suffix). The library uses `POST ${baseUrl}/chat` and `GET ${baseUrl}/chat/history/:userId`. |
+| `baseUrl` | API origin only (no `/agents/chat` suffix). The library uses `POST ${baseUrl}/agents/chat` and `GET ${baseUrl}/agents/chat/history/:userId`. |
 | `teamName` | Backend routing (e.g. `generac-team`, `ritz-team`) |
 | `sessionIdSuffix` | Thread namespace per surface (e.g. `_proposal`, `_generac_offer`) |
 | `getUserId` | Stable user id; library generates anonymous id if null |
@@ -89,6 +90,7 @@ export function App() {
 
 ### Optional
 
+- `apiKey` — frontend API key; sent as `Authorization: Bearer …` on chat + history (and voice when used)
 - `quickQuestions` — suggestion chips above the composer; see **`quickReplyBehavior`** below
 - **`quickReplyBehavior`** — `welcome` (default): chips only before the first user message; `always`: chips stay visible whenever `quickQuestions` is set (closer to persistent AI Elements suggestions)
 - `sanitizeHistory` / `filterUiMessages` / `shouldSkipAutoSend` — loader / hidden-prompt flows

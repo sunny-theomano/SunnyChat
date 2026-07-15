@@ -83,6 +83,11 @@ export type RealtimeChatSessionConfig = {
   sessionTokenEndpoint?: string;
   toolHandlers?: Record<string, RealtimeToolHandler>;
   initialInstructions?: string;
+  /**
+   * Frontend API key (`FRONTEND_API_KEY`). Sent as `Authorization: Bearer …`
+   * on voice session + tool API requests when set.
+   */
+  apiKey?: string;
   onAnalytics?: (
     event: RealtimeChatAnalyticsEvent,
     context: RealtimeChatAnalyticsContext,

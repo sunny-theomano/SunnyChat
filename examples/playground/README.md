@@ -21,7 +21,7 @@ Opens at [http://localhost:5173](http://localhost:5173).
 
 ## What it does
 
-- **`fetchImpl` mock** — intercepts `POST /chat` and `GET /chat/history/:userId`, streams SSE `TeamRunContent` / `TeamRunCompleted` events.
+- **`fetchImpl` mock** — intercepts `POST /agents/chat` and `GET /agents/chat/history/:userId`, streams SSE `TeamRunContent` / `TeamRunCompleted` events.
 - **Preset scenarios** — sidebar lists mock Q&A pairs; the same questions appear as quick-reply chips in the widget.
 - **Controls** — reset the session or toggle “fail next message” to test error handling.
 - **Analytics log** — shows `onAnalytics` events in real time.

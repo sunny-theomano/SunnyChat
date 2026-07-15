@@ -5,6 +5,7 @@ import {
   useRef,
   useState,
 } from "react";
+import { mergeChatAuthHeaders } from "../core/authHeaders.js";
 import { hasUserMessage, normalizeHistoryMessages } from "../core/history.js";
 import { buildSessionId, generateAnonymousId } from "../core/session.js";
 import {
@@ -76,9 +77,9 @@ export type UseChatSessionConfig = {
   /** If true, panel starts open (headless / embedded modes). */
   initialOpen?: boolean;
   /**
-   * API origin only (no `/chat` suffix). The package calls:
-   * - `POST ${baseUrl}/chat` for streaming messages
-   * - `GET ${baseUrl}/chat/history/:userId` for history
+   * API origin only (no `/agents/chat` suffix). The package calls:
+   * - `POST ${baseUrl}/agents/chat` for streaming messages
+   * - `GET ${baseUrl}/agents/chat/history/:userId` for history
    */
   baseUrl: string;
   teamName: string;
@@ -92,6 +93,11 @@ export type UseChatSessionConfig = {
    * - `always`: whenever the panel is open and `quickQuestions` is non-empty (AI Elements–style persistent chips).
    */
   quickReplyBehavior?: "welcome" | "always";
+  /**
+   * Frontend API key (`FRONTEND_API_KEY`). Sent as `Authorization: Bearer …`
+   * on chat + history requests for every UI variant that uses this hook.
+   */
+  apiKey?: string;
   sanitizeHistory?: (data: unknown) => unknown;
   filterUiMessages?: (messages: ChatMessage[]) => ChatMessage[];
   shouldSkipAutoSend?: (messages: ChatMessage[]) => boolean;
@@ -177,7 +183,9 @@ export function useChatSession(cfg: UseChatSessionConfig) {
       const fetchFn = cfg.fetchImpl ?? fetch;
       const res = await fetchFn(historyEndpoint, {
         method: "GET",
-        headers: { "Content-Type": "application/json" },
+        headers: mergeChatAuthHeaders(cfg.apiKey, {
+          "Content-Type": "application/json",
+        }),
       });
       const raw = await res.json().catch(() => ({}));
       const sanitized = cfg.sanitizeHistory ? cfg.sanitizeHistory(raw) : raw;
@@ -268,6 +276,7 @@ export function useChatSession(cfg: UseChatSessionConfig) {
         await streamChatResponse({
           url: postUrl,
           fetchImpl: cfg.fetchImpl,
+          apiKey: cfg.apiKey,
           parseChunk: cfg.parseChunk,
           signal: controller.signal,
           body: {

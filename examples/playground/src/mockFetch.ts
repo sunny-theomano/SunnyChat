@@ -61,7 +61,7 @@ export function createMockFetch(opts: MockFetchOptions = {}): typeof fetch {
           ? input.href
           : input.url;
 
-    if (url.includes("/chat/history/")) {
+    if (url.includes("/agents/chat/history/") || url.includes("/chat/history/")) {
       await delay(opts.latencyMs ?? 120);
       return new Response(JSON.stringify({ messages: [] }), {
         status: 200,
@@ -69,7 +69,11 @@ export function createMockFetch(opts: MockFetchOptions = {}): typeof fetch {
       });
     }
 
-    if (url.startsWith(MOCK_BASE) && url.endsWith("/chat") && init?.method === "POST") {
+    if (
+      url.startsWith(MOCK_BASE) &&
+      (url.endsWith("/agents/chat") || url.endsWith("/chat")) &&
+      init?.method === "POST"
+    ) {
       await delay(opts.latencyMs ?? 180);
 
       if (opts.shouldSimulateError?.()) {

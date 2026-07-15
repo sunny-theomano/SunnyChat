@@ -1,3 +1,4 @@
+import { mergeChatAuthHeaders } from "./authHeaders.js";
 import { defaultParseChunk, extractJsonBlocks } from "./parseSse.js";
 import type { ParseChunkResult, StreamEventPayload } from "./types.js";
 
@@ -15,6 +16,8 @@ export type StreamChatParams = {
   body: StreamChatBody;
   signal: AbortSignal;
   fetchImpl?: typeof fetch;
+  /** Frontend API key — sent as `Authorization: Bearer …` when set. */
+  apiKey?: string;
   parseChunk?: (json: StreamEventPayload) => ParseChunkResult;
   onDelta: (text: string) => void;
   /** Called for every parsed SSE object (deltas, sources, tools, ignore). */
@@ -28,10 +31,10 @@ export async function streamChatResponse(params: StreamChatParams): Promise<void
 
   const res = await fetchFn(params.url, {
     method: "POST",
-    headers: {
+    headers: mergeChatAuthHeaders(params.apiKey, {
       Accept: "text/event-stream",
       "Content-Type": "application/json",
-    },
+    }),
     body: JSON.stringify(params.body),
     signal: params.signal,
   });
@@ -78,14 +81,14 @@ export async function streamChatResponse(params: StreamChatParams): Promise<void
   }
 }
 
-/** `POST ${normalize(baseUrl)}/chat` */
+/** `POST ${normalize(baseUrl)}/agents/chat` */
 export function resolveChatUrl(baseUrl: string): string {
   const base = baseUrl.replace(/\/$/, "");
-  return `${base}/chat`;
+  return `${base}/agents/chat`;
 }
 
-/** `GET ${normalize(baseUrl)}/chat/history/:userId` */
+/** `GET ${normalize(baseUrl)}/agents/chat/history/:userId` */
 export function resolveHistoryUrl(baseUrl: string, userId: string): string {
   const base = baseUrl.replace(/\/$/, "");
-  return `${base}/chat/history/${encodeURIComponent(userId)}`;
+  return `${base}/agents/chat/history/${encodeURIComponent(userId)}`;
 }

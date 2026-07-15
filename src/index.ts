@@ -56,6 +56,7 @@ export type {
 export { generateAnonymousId, buildSessionId } from "./core/session.js";
 export { normalizeHistoryMessages, hasUserMessage } from "./core/history.js";
 export { defaultParseChunk, extractJsonBlocks } from "./core/parseSse.js";
+export { mergeChatAuthHeaders } from "./core/authHeaders.js";
 export {
   streamChatResponse,
   resolveChatUrl,

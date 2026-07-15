@@ -1,3 +1,4 @@
+import { mergeChatAuthHeaders } from "../core/authHeaders.js";
 import { buildSessionId, generateAnonymousId } from "../core/session.js";
 import type { ChatMessage, ChatToolInvocation } from "../core/types.js";
 import { createDefaultVoiceToolHandlers, resolveVoiceSessionUrl } from "./voiceApi.js";
@@ -152,6 +153,7 @@ export function createRealtimeChatSession(initialConfig: RealtimeChatSessionConf
       ...createDefaultVoiceToolHandlers({
         baseUrl: config.baseUrl,
         fetchImpl: fetchImpl(),
+        apiKey: config.apiKey,
       }),
       ...custom,
     };
@@ -466,7 +468,9 @@ export function createRealtimeChatSession(initialConfig: RealtimeChatSessionConf
               }
               const res = await fetchImpl()(buildSessionTokenRequestUrl(endpoint), {
                 method: "POST",
-                headers: { "Content-Type": "application/json" },
+                headers: mergeChatAuthHeaders(config.apiKey, {
+                  "Content-Type": "application/json",
+                }),
                 body: JSON.stringify({ user_id: effectiveUserId }),
               });
               if (!res.ok) {

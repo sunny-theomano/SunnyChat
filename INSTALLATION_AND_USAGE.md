@@ -95,7 +95,8 @@ import { SunnyChat } from "sunny-chat";
 
 | Area | Notes |
 |------|--------|
-| `baseUrl` | API origin only. Library calls `POST …/chat` and `GET …/chat/history/:userId`. |
+| `baseUrl` | API origin only. Library calls `POST …/agents/chat` and `GET …/agents/chat/history/:userId`. |
+| `apiKey` | Optional frontend API key (`Authorization: Bearer …`) for every variant. |
 | `teamName`, `sessionIdSuffix` | Routed to the backend with each request. |
 | `getUserId` | Returns authenticated id or `null` (anonymous id is generated and persisted in-memory for the hook lifetime). |
 | `greetingAssistantText` | Shown when history is empty or fails. |
@@ -327,8 +328,8 @@ await streamChatResponse({
 
 | Function | URL |
 |----------|-----|
-| `resolveChatUrl(baseUrl)` | `POST ${base}/chat` |
-| `resolveHistoryUrl(baseUrl, userId)` | `GET ${base}/chat/history/${encodeURIComponent(userId)}` |
+| `resolveChatUrl(baseUrl)` | `POST ${base}/agents/chat` |
+| `resolveHistoryUrl(baseUrl, userId)` | `GET ${base}/agents/chat/history/${encodeURIComponent(userId)}` |
 
 Trailing slashes on `baseUrl` are normalized.
 

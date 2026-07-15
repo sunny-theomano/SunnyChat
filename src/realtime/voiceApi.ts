@@ -1,4 +1,5 @@
 import type { RealtimeToolHandler } from "./types.js";
+import { mergeChatAuthHeaders } from "../core/authHeaders.js";
 
 function normalizeBaseUrl(baseUrl: string): string {
   return baseUrl.replace(/\/$/, "");
@@ -43,16 +44,21 @@ export function resolveVoiceFinancingDataUrl(baseUrl: string): string {
 export type VoiceApiRequestOptions = {
   baseUrl: string;
   fetchImpl?: typeof fetch;
+  /** Frontend API key — sent as `Authorization: Bearer …` when set. */
+  apiKey?: string;
 };
 
 async function postVoiceJson<T>(
   url: string,
   body: unknown,
   fetchImpl: typeof fetch = fetch,
+  apiKey?: string,
 ): Promise<T> {
   const res = await fetchImpl(url, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: mergeChatAuthHeaders(apiKey, {
+      "Content-Type": "application/json",
+    }),
     body: JSON.stringify(body),
   });
   if (!res.ok) {
@@ -72,7 +78,7 @@ export function createDefaultVoiceToolHandlers(
   options: VoiceApiRequestOptions,
 ): Record<string, RealtimeToolHandler> {
   const fetchImpl = options.fetchImpl ?? fetch;
-  const { baseUrl } = options;
+  const { baseUrl, apiKey } = options;
 
   return {
     search_docs: async (args) => {
@@ -80,6 +86,7 @@ export function createDefaultVoiceToolHandlers(
         resolveVoiceSearchUrl(baseUrl),
         { query: readStringArg(args, "query") },
         fetchImpl,
+        apiKey,
       );
       return data.context ?? "";
     },
@@ -88,6 +95,7 @@ export function createDefaultVoiceToolHandlers(
         resolveVoiceMemorySearchUrl(baseUrl),
         { query: readStringArg(args, "query"), user_id: context.userId },
         fetchImpl,
+        apiKey,
       );
       return data.memories ?? "";
     },
@@ -96,6 +104,7 @@ export function createDefaultVoiceToolHandlers(
         resolveVoiceMemorySaveUrl(baseUrl),
         { fact: readStringArg(args, "fact"), user_id: context.userId },
         fetchImpl,
+        apiKey,
       );
       return "Memory saved.";
     },
@@ -104,6 +113,7 @@ export function createDefaultVoiceToolHandlers(
         resolveVoiceDesignDataUrl(baseUrl),
         { user_id: context.userId },
         fetchImpl,
+        apiKey,
       );
       return typeof data.data === "string" ? data.data : JSON.stringify(data.data ?? {});
     },
@@ -112,6 +122,7 @@ export function createDefaultVoiceToolHandlers(
         resolveVoiceFinancingDataUrl(baseUrl),
         { user_id: context.userId },
         fetchImpl,
+        apiKey,
       );
       return typeof data.data === "string" ? data.data : JSON.stringify(data.data ?? {});
     },
