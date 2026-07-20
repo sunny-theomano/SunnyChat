@@ -1,6 +1,6 @@
 # SunnyChat Playground
 
-Local UI to exercise **SunnyChat** against a mock backend — no real API required.
+Local UI to exercise **SunnyChat** against a **real** backend. Enter API details in the sidebar, connect, and stream live SSE (`RunContent` / `RunCompleted`).
 
 ## Run
 
@@ -17,13 +17,19 @@ npm install
 npm run dev
 ```
 
-Opens at [http://localhost:5173](http://localhost:5173).
+Opens at [http://localhost:5173](http://localhost:5173) (or the next free port).
 
 ## What it does
 
-- **`fetchImpl` mock** — intercepts `POST /agents/chat` and `GET /agents/chat/history/:userId`, streams SSE `RunContent` / `RunCompleted` events.
-- **Preset scenarios** — sidebar lists mock Q&A pairs; the same questions appear as quick-reply chips in the widget.
-- **Controls** — reset the session or toggle “fail next message” to test error handling.
+- **Connection form** — `baseUrl`, **chat surface** (pre-proposal / post-proposal / default), optional `apiKey`, `teamName`, `sessionIdSuffix`, `userId`, greeting, and quick questions.
+- **Live chat** — uses real `fetch`:
+  - Pre-proposal → `POST ${baseUrl}/agents/pre-proposal/chat`
+  - Post-proposal → `POST ${baseUrl}/agents/post-proposal/chat`
+  - Default → `POST ${baseUrl}/agents/chat`
+  - History always → `GET ${baseUrl}/agents/chat/history/:userId`
+- **Persistence** — form values are saved in `localStorage`.
 - **Analytics log** — shows `onAnalytics` events in real time.
 
-Edit mock copy in `src/mockResponses.ts`.
+## CORS
+
+The browser must be allowed to call your API from the playground origin. If Network shows a CORS error, enable CORS on the API for `http://localhost:5173` (or whichever port Vite used).

@@ -8,6 +8,7 @@ import {
 import { mergeChatAuthHeaders } from "../core/authHeaders.js";
 import { hasUserMessage, normalizeHistoryMessages } from "../core/history.js";
 import { buildSessionId, generateAnonymousId } from "../core/session.js";
+import type { ChatSurface } from "../core/chatSurface.js";
 import {
   resolveChatUrl,
   resolveHistoryUrl,
@@ -77,11 +78,19 @@ export type UseChatSessionConfig = {
   /** If true, panel starts open (headless / embedded modes). */
   initialOpen?: boolean;
   /**
-   * API origin only (no `/agents/chat` suffix). The package calls:
-   * - `POST ${baseUrl}/agents/chat` for streaming messages
+   * API origin only (no chat path suffix). The package calls:
+   * - `POST ${baseUrl}/agents/chat` (or pre/post-proposal path via `chatSurface`)
    * - `GET ${baseUrl}/agents/chat/history/:userId` for history
    */
   baseUrl: string;
+  /**
+   * Selects the chat POST route:
+   * - `default` → `/agents/chat`
+   * - `preProposal` → `/agents/pre-proposal/chat`
+   * - `postProposal` → `/agents/post-proposal/chat`
+   * History always uses `/agents/chat/history/:userId`.
+   */
+  chatSurface?: ChatSurface;
   teamName: string;
   sessionIdSuffix: string;
   getUserId: () => string | null;
@@ -163,7 +172,10 @@ export function useChatSession(cfg: UseChatSessionConfig) {
     [sessionId, cfg.sessionIdSuffix, cfg.teamName]
   );
 
-  const postUrl = useMemo(() => resolveChatUrl(cfg.baseUrl), [cfg.baseUrl]);
+  const postUrl = useMemo(
+    () => resolveChatUrl(cfg.baseUrl, cfg.chatSurface ?? "default"),
+    [cfg.baseUrl, cfg.chatSurface],
+  );
 
   const abort = useCallback(() => {
     abortRef.current?.abort();

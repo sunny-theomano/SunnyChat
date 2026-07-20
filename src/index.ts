@@ -61,8 +61,14 @@ export {
   streamChatResponse,
   resolveChatUrl,
   resolveHistoryUrl,
+  CHAT_SURFACES,
+  chatPathFor,
 } from "./core/streamChat.js";
-export type { StreamChatBody, StreamChatParams } from "./core/streamChat.js";
+export type {
+  StreamChatBody,
+  StreamChatParams,
+  ChatSurface,
+} from "./core/streamChat.js";
 
 export { useMarkedHtml } from "./ui/markdown.js";
 

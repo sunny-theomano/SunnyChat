@@ -11,7 +11,9 @@ function delay(ms: number) {
 }
 
 function sseBlock(payload: Record<string, unknown>) {
-  return `${JSON.stringify(payload)}\n\n`;
+  const event =
+    typeof payload.event === "string" ? payload.event : "message";
+  return `event: ${event}\ndata: ${JSON.stringify(payload)}\n\n`;
 }
 
 function createStreamingResponse(text: string): Response {

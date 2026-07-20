@@ -7,36 +7,83 @@ import type { ParseChunkResult, StreamEventPayload } from "./types.js";
  * or `{ kind: "assistant_sources", sources: [{ title: "Docs", url: "https://..." }] }` from your SSE `event` payloads.
  */
 export function defaultParseChunk(json: StreamEventPayload): ParseChunkResult {
-  const event = typeof json.event === "string" ? json.event : "";
-  if (event === "RunContent") {
+  const event =
+    typeof json.event === "string"
+      ? json.event
+      : typeof json.type === "string"
+        ? json.type
+        : "";
+  if (event === "RunContent" || event === "TeamRunContent") {
     const content = json.content;
     if (typeof content === "string" && content.length > 0) {
       return { kind: "assistant_delta", text: content };
     }
     return { kind: "ignore" };
   }
-  if (event === "RunCompleted") {
+  if (event === "RunCompleted" || event === "TeamRunCompleted") {
     return { kind: "assistant_complete" };
   }
   return { kind: "ignore" };
 }
 
 /**
- * Reads SSE-style stream: split decoded chunks on `\n\n`, JSON.parse each block.
- * Invokes onEvent for each parsed object; swallow parse errors (buffer partials externally).
+ * Parses an SSE stream buffer.
+ *
+ * Supports:
+ * - Standard SSE: `event: RunContent\ndata: {"event":"RunContent","content":"…"}\n\n`
+ * - Legacy raw JSON blocks: `{"event":"RunContent","content":"…"}\n\n`
+ *
+ * Incomplete trailing lines stay in `rest` until the next read.
  */
-export function extractJsonBlocks(buffer: string): { blocks: unknown[]; rest: string } {
-  const parts = buffer.split("\n\n");
-  const rest = parts.pop() ?? "";
+export function extractJsonBlocks(buffer: string): {
+  blocks: unknown[];
+  rest: string;
+} {
   const blocks: unknown[] = [];
-  for (const raw of parts) {
-    const trimmed = raw.trim();
-    if (!trimmed) continue;
+  const lines = buffer.split(/\r?\n/);
+  const restLine = lines.pop() ?? "";
+
+  let pendingEventName = "";
+
+  for (const line of lines) {
+    const trimmed = line.trim();
+    if (!trimmed) {
+      pendingEventName = "";
+      continue;
+    }
+
+    if (trimmed.startsWith("event:")) {
+      pendingEventName = trimmed.slice(6).trim();
+      continue;
+    }
+
+    let jsonStr = "";
+    if (trimmed.startsWith("data:")) {
+      jsonStr = trimmed.slice(5).trim();
+    } else if (trimmed.startsWith("{")) {
+      // Legacy: raw JSON block without `data:` prefix
+      jsonStr = trimmed;
+    } else {
+      continue;
+    }
+
+    if (!jsonStr || jsonStr === "[DONE]") continue;
+
     try {
-      blocks.push(JSON.parse(trimmed) as unknown);
+      const parsed = JSON.parse(jsonStr) as Record<string, unknown>;
+      if (pendingEventName && typeof parsed.event !== "string") {
+        parsed.event = pendingEventName;
+      }
+      blocks.push(parsed);
     } catch {
-      // partial / garbage — doc: ignore until complete
+      // Malformed / incomplete JSON line — skip
     }
   }
+
+  const rest =
+    pendingEventName && restLine
+      ? `event: ${pendingEventName}\n${restLine}`
+      : restLine;
+
   return { blocks, rest };
 }
