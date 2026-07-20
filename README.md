@@ -94,7 +94,7 @@ export function App() {
 - `quickQuestions` — suggestion chips above the composer; see **`quickReplyBehavior`** below
 - **`quickReplyBehavior`** — `welcome` (default): chips only before the first user message; `always`: chips stay visible whenever `quickQuestions` is set (closer to persistent AI Elements suggestions)
 - `sanitizeHistory` / `filterUiMessages` / `shouldSkipAutoSend` — loader / hidden-prompt flows
-- `parseChunk` — extend SSE JSON handling beyond `TeamRunContent` / `TeamRunCompleted`
+- `parseChunk` — extend SSE JSON handling beyond `RunContent` / `RunCompleted`
 - `connectionErrorText` — assistant bubble text on network/HTTP failure
 - `initialOpen` — open panel without FAB (e.g. embedded concierge)
 - `defaultChrome={false}` — render thread + composer only; you provide shell / FAB

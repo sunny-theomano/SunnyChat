@@ -23,14 +23,14 @@ function createStreamingResponse(text: string): Response {
       for (const token of tokens) {
         controller.enqueue(
           encoder.encode(
-            sseBlock({ event: "TeamRunContent", content: token }),
+            sseBlock({ event: "RunContent", content: token }),
           ),
         );
         await delay(25 + Math.random() * 35);
       }
 
       controller.enqueue(
-        encoder.encode(sseBlock({ event: "TeamRunCompleted" })),
+        encoder.encode(sseBlock({ event: "RunCompleted" })),
       );
       controller.close();
     },

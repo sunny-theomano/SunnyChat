@@ -335,7 +335,7 @@ Trailing slashes on `baseUrl` are normalized.
 
 ### `defaultParseChunk` / `extractJsonBlocks`
 
-- **`defaultParseChunk`** — maps Sunny backend events `TeamRunContent` (text deltas) and `TeamRunCompleted` to `ParseChunkResult`. Unknown events → `ignore`.
+- **`defaultParseChunk`** — maps Sunny backend events `RunContent` (text deltas) and `RunCompleted` to `ParseChunkResult`. Unknown events → `ignore`.
 - **`extractJsonBlocks`** — splits a decoded stream buffer on `\n\n` and `JSON.parse`s complete blocks; use if you implement a custom reader around `fetch` streams.
 
 Extend parsing by passing a custom **`parseChunk`** to `useChatSession` / `SunnyChat` / `streamChatResponse` that returns:

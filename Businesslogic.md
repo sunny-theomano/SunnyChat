@@ -68,8 +68,8 @@ Implementation splits the decoded body on **double newlines** `\n\n`, then **JSO
 
 | `event` | Action |
 |---------|--------|
-| `TeamRunContent` | Append `content` string to the **current assistant** message (last bubble). |
-| `TeamRunCompleted` | Optional “flush” signal; end-of-stream also handled when reader completes. |
+| `RunContent` | Append `content` string to the **current assistant** message (last bubble). |
+| `RunCompleted` | Optional “flush” signal; end-of-stream also handled when reader completes. |
 
 **Ignored:** parse errors on a chunk are swallowed (partial chunk stays in buffer until next read).
 
@@ -311,7 +311,7 @@ function useChatSession(cfg: UseChatSessionConfig): {
 
 ## 17. Versioning note
 
-Backend **SSE JSON shape** (`TeamRunContent` / `TeamRunCompleted`) is a **public contract** between this frontend and `REACT_APP_V3_BASE_URL`. If the agent service adds events, bump **minor** version of `@org/chat-core` and extend the parser with backward compatibility.
+Backend **SSE JSON shape** (`RunContent` / `RunCompleted`) is a **public contract** between this frontend and `REACT_APP_V3_BASE_URL`. If the agent service adds events, bump **minor** version of `@org/chat-core` and extend the parser with backward compatibility.
 
 ---
 
