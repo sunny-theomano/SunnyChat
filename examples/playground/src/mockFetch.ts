@@ -11,7 +11,9 @@ function delay(ms: number) {
 }
 
 function sseBlock(payload: Record<string, unknown>) {
-  return `${JSON.stringify(payload)}\n\n`;
+  const event =
+    typeof payload.event === "string" ? payload.event : "message";
+  return `event: ${event}\ndata: ${JSON.stringify(payload)}\n\n`;
 }
 
 function createStreamingResponse(text: string): Response {
@@ -23,14 +25,14 @@ function createStreamingResponse(text: string): Response {
       for (const token of tokens) {
         controller.enqueue(
           encoder.encode(
-            sseBlock({ event: "TeamRunContent", content: token }),
+            sseBlock({ event: "RunContent", content: token }),
           ),
         );
         await delay(25 + Math.random() * 35);
       }
 
       controller.enqueue(
-        encoder.encode(sseBlock({ event: "TeamRunCompleted" })),
+        encoder.encode(sseBlock({ event: "RunCompleted" })),
       );
       controller.close();
     },
@@ -61,7 +63,7 @@ export function createMockFetch(opts: MockFetchOptions = {}): typeof fetch {
           ? input.href
           : input.url;
 
-    if (url.includes("/chat/history/")) {
+    if (url.includes("/agents/chat/history/") || url.includes("/chat/history/")) {
       await delay(opts.latencyMs ?? 120);
       return new Response(JSON.stringify({ messages: [] }), {
         status: 200,
@@ -69,7 +71,11 @@ export function createMockFetch(opts: MockFetchOptions = {}): typeof fetch {
       });
     }
 
-    if (url.startsWith(MOCK_BASE) && url.endsWith("/chat") && init?.method === "POST") {
+    if (
+      url.startsWith(MOCK_BASE) &&
+      (url.endsWith("/agents/chat") || url.endsWith("/chat")) &&
+      init?.method === "POST"
+    ) {
       await delay(opts.latencyMs ?? 180);
 
       if (opts.shouldSimulateError?.()) {

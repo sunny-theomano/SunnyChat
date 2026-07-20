@@ -1,5 +1,10 @@
+import { mergeChatAuthHeaders } from "./authHeaders.js";
+import { chatPathFor, type ChatSurface } from "./chatSurface.js";
 import { defaultParseChunk, extractJsonBlocks } from "./parseSse.js";
 import type { ParseChunkResult, StreamEventPayload } from "./types.js";
+
+export type { ChatSurface } from "./chatSurface.js";
+export { CHAT_SURFACES, chatPathFor } from "./chatSurface.js";
 
 export type StreamChatBody = {
   message: string;
@@ -15,6 +20,8 @@ export type StreamChatParams = {
   body: StreamChatBody;
   signal: AbortSignal;
   fetchImpl?: typeof fetch;
+  /** Frontend API key — sent as `Authorization: Bearer …` when set. */
+  apiKey?: string;
   parseChunk?: (json: StreamEventPayload) => ParseChunkResult;
   onDelta: (text: string) => void;
   /** Called for every parsed SSE object (deltas, sources, tools, ignore). */
@@ -28,10 +35,10 @@ export async function streamChatResponse(params: StreamChatParams): Promise<void
 
   const res = await fetchFn(params.url, {
     method: "POST",
-    headers: {
+    headers: mergeChatAuthHeaders(params.apiKey, {
       Accept: "text/event-stream",
       "Content-Type": "application/json",
-    },
+    }),
     body: JSON.stringify(params.body),
     signal: params.signal,
   });
@@ -61,16 +68,15 @@ export async function streamChatResponse(params: StreamChatParams): Promise<void
         if (r.kind === "assistant_delta") params.onDelta(r.text);
       }
     }
-    // flush trailing single block without trailing \n\n
-    const tail = carry.trim();
-    if (tail) {
-      try {
-        const json = JSON.parse(tail) as StreamEventPayload;
+    // Flush trailing buffered line(s) once the stream ends
+    if (carry.trim()) {
+      const { blocks } = extractJsonBlocks(`${carry}\n\n`);
+      for (const block of blocks) {
+        if (!block || typeof block !== "object") continue;
+        const json = block as StreamEventPayload;
         const r = parseChunk(json);
         params.onParseChunk?.(r);
         if (r.kind === "assistant_delta") params.onDelta(r.text);
-      } catch {
-        // incomplete tail — ignore
       }
     }
   } finally {
@@ -78,14 +84,22 @@ export async function streamChatResponse(params: StreamChatParams): Promise<void
   }
 }
 
-/** `POST ${normalize(baseUrl)}/chat` */
-export function resolveChatUrl(baseUrl: string): string {
+/**
+ * Chat POST URL for a surface:
+ * - `default` → `POST …/agents/chat`
+ * - `preProposal` → `POST …/agents/pre-proposal/chat`
+ * - `postProposal` → `POST …/agents/post-proposal/chat`
+ */
+export function resolveChatUrl(
+  baseUrl: string,
+  surface: ChatSurface = "default",
+): string {
   const base = baseUrl.replace(/\/$/, "");
-  return `${base}/chat`;
+  return `${base}${chatPathFor(surface)}`;
 }
 
-/** `GET ${normalize(baseUrl)}/chat/history/:userId` */
+/** `GET ${normalize(baseUrl)}/agents/chat/history/:userId` */
 export function resolveHistoryUrl(baseUrl: string, userId: string): string {
   const base = baseUrl.replace(/\/$/, "");
-  return `${base}/chat/history/${encodeURIComponent(userId)}`;
+  return `${base}/agents/chat/history/${encodeURIComponent(userId)}`;
 }

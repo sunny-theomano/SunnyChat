@@ -43,7 +43,7 @@ It is derived from the current implementation in:
 
 ## 3. External contracts (backend)
 
-### 3.1 `POST {BASE_URL}/chat`
+### 3.1 `POST {BASE_URL}/agents/chat`
 
 **Transport:** `fetch` with `Accept: text/event-stream`, **ReadableStream** read in a loop.
 
@@ -58,7 +58,7 @@ It is derived from the current implementation in:
 | `session_id` | string | yes | **Namespace** for this thread (see §5). |
 | `team_name` | string | yes | **Routes agent / prompt** on backend (e.g. `ritz-team`, `generac-team`). |
 
-**Base URL:** today `REACT_APP_V3_BASE_URL`; the library takes a single `baseUrl` (origin) and derives `POST …/chat` and `GET …/chat/history/:userId` internally.
+**Base URL:** today `REACT_APP_V3_BASE_URL`; the library takes a single `baseUrl` (origin) and derives `POST …/agents/chat` and `GET …/agents/chat/history/:userId` internally. Optional `apiKey` is sent as `Authorization: Bearer …`.
 
 ### 3.2 Stream protocol (SSE-style chunks)
 
@@ -68,14 +68,14 @@ Implementation splits the decoded body on **double newlines** `\n\n`, then **JSO
 
 | `event` | Action |
 |---------|--------|
-| `TeamRunContent` | Append `content` string to the **current assistant** message (last bubble). |
-| `TeamRunCompleted` | Optional “flush” signal; end-of-stream also handled when reader completes. |
+| `RunContent` | Append `content` string to the **current assistant** message (last bubble). |
+| `RunCompleted` | Optional “flush” signal; end-of-stream also handled when reader completes. |
 
 **Ignored:** parse errors on a chunk are swallowed (partial chunk stays in buffer until next read).
 
 **Library contract:** expose a pluggable `parseChunk(json)` if backends add events later; default parser matches the table above.
 
-### 3.3 `GET {BASE_URL}/chat/history/{userId}`
+### 3.3 `GET {BASE_URL}/agents/chat/history/{userId}`
 
 **Method:** GET, `Content-Type: application/json`.
 
@@ -245,7 +245,8 @@ Host maps events to PostHog / GA4 / etc.
 
 ```ts
 type UseChatSessionConfig = {
-  baseUrl: string;                       // API origin; package appends /chat and /chat/history/:userId
+  baseUrl: string;                       // API origin; package appends /agents/chat and /agents/chat/history/:userId
+  apiKey?: string;                       // FRONTEND_API_KEY → Authorization: Bearer …
   teamName: string;
   sessionIdSuffix: string;
   getUserId: () => string | null;
@@ -310,7 +311,7 @@ function useChatSession(cfg: UseChatSessionConfig): {
 
 ## 17. Versioning note
 
-Backend **SSE JSON shape** (`TeamRunContent` / `TeamRunCompleted`) is a **public contract** between this frontend and `REACT_APP_V3_BASE_URL`. If the agent service adds events, bump **minor** version of `@org/chat-core` and extend the parser with backward compatibility.
+Backend **SSE JSON shape** (`RunContent` / `RunCompleted`) is a **public contract** between this frontend and `REACT_APP_V3_BASE_URL`. If the agent service adds events, bump **minor** version of `@org/chat-core` and extend the parser with backward compatibility.
 
 ---
 

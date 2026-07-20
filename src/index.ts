@@ -56,12 +56,19 @@ export type {
 export { generateAnonymousId, buildSessionId } from "./core/session.js";
 export { normalizeHistoryMessages, hasUserMessage } from "./core/history.js";
 export { defaultParseChunk, extractJsonBlocks } from "./core/parseSse.js";
+export { mergeChatAuthHeaders } from "./core/authHeaders.js";
 export {
   streamChatResponse,
   resolveChatUrl,
   resolveHistoryUrl,
+  CHAT_SURFACES,
+  chatPathFor,
 } from "./core/streamChat.js";
-export type { StreamChatBody, StreamChatParams } from "./core/streamChat.js";
+export type {
+  StreamChatBody,
+  StreamChatParams,
+  ChatSurface,
+} from "./core/streamChat.js";
 
 export { useMarkedHtml } from "./ui/markdown.js";
 
@@ -71,3 +78,36 @@ export {
 } from "./ui/conversationScroll.js";
 export type { ConversationScrollState } from "./ui/conversationScroll.js";
 export type { SunnyChatConversationScrollProps } from "./ui/conversationScroll.js";
+
+
+export { createRealtimeChatSession } from "./realtime/session.js";
+export {
+  createDefaultVoiceToolHandlers,
+  resolveVoiceDesignDataUrl,
+  resolveVoiceFinancingDataUrl,
+  resolveVoiceMemorySaveUrl,
+  resolveVoiceMemorySearchUrl,
+  resolveVoiceSearchUrl,
+  resolveVoiceSessionUrl,
+} from "./realtime/voiceApi.js";
+export type { VoiceApiRequestOptions } from "./realtime/voiceApi.js";
+export { useRealtimeChatSession } from "./react/useRealtimeChatSession.js";
+export type {
+  UseRealtimeChatSessionConfig,
+} from "./react/useRealtimeChatSession.js";
+export type {
+  RealtimeAudioElementLike,
+  RealtimeChatAnalyticsContext,
+  RealtimeChatAnalyticsEvent,
+  RealtimeChatSession,
+  RealtimeChatSessionConfig,
+  RealtimeChatSessionSnapshot,
+  RealtimeConnectionState,
+  RealtimeDataChannelLike,
+  RealtimeMediaStreamLike,
+  RealtimeMediaTrackLike,
+  RealtimePeerConnectionLike,
+  RealtimeToolHandler,
+  RealtimeToolHandlerContext,
+  RealtimeTrackEventLike,
+} from "./realtime/types.js";

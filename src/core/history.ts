@@ -78,7 +78,7 @@ function normalizeRole(r: string | undefined): "user" | "assistant" | null {
   return null;
 }
 
-/** Normalizes GET /chat/history response into canonical ChatMessage[]. */
+/** Normalizes GET /agents/chat/history response into canonical ChatMessage[]. */
 export function normalizeHistoryMessages(data: unknown): ChatMessage[] {
   const body = data as HistoryApiResponse;
   const list = body?.messages;

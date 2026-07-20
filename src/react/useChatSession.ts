@@ -5,8 +5,10 @@ import {
   useRef,
   useState,
 } from "react";
+import { mergeChatAuthHeaders } from "../core/authHeaders.js";
 import { hasUserMessage, normalizeHistoryMessages } from "../core/history.js";
 import { buildSessionId, generateAnonymousId } from "../core/session.js";
+import type { ChatSurface } from "../core/chatSurface.js";
 import {
   resolveChatUrl,
   resolveHistoryUrl,
@@ -76,11 +78,19 @@ export type UseChatSessionConfig = {
   /** If true, panel starts open (headless / embedded modes). */
   initialOpen?: boolean;
   /**
-   * API origin only (no `/chat` suffix). The package calls:
-   * - `POST ${baseUrl}/chat` for streaming messages
-   * - `GET ${baseUrl}/chat/history/:userId` for history
+   * API origin only (no chat path suffix). The package calls:
+   * - `POST ${baseUrl}/agents/chat` (or pre/post-proposal path via `chatSurface`)
+   * - `GET ${baseUrl}/agents/chat/history/:userId` for history
    */
   baseUrl: string;
+  /**
+   * Selects the chat POST route:
+   * - `default` → `/agents/chat`
+   * - `preProposal` → `/agents/pre-proposal/chat`
+   * - `postProposal` → `/agents/post-proposal/chat`
+   * History always uses `/agents/chat/history/:userId`.
+   */
+  chatSurface?: ChatSurface;
   teamName: string;
   sessionIdSuffix: string;
   getUserId: () => string | null;
@@ -92,6 +102,11 @@ export type UseChatSessionConfig = {
    * - `always`: whenever the panel is open and `quickQuestions` is non-empty (AI Elements–style persistent chips).
    */
   quickReplyBehavior?: "welcome" | "always";
+  /**
+   * Frontend API key (`FRONTEND_API_KEY`). Sent as `Authorization: Bearer …`
+   * on chat + history requests for every UI variant that uses this hook.
+   */
+  apiKey?: string;
   sanitizeHistory?: (data: unknown) => unknown;
   filterUiMessages?: (messages: ChatMessage[]) => ChatMessage[];
   shouldSkipAutoSend?: (messages: ChatMessage[]) => boolean;
@@ -157,7 +172,10 @@ export function useChatSession(cfg: UseChatSessionConfig) {
     [sessionId, cfg.sessionIdSuffix, cfg.teamName]
   );
 
-  const postUrl = useMemo(() => resolveChatUrl(cfg.baseUrl), [cfg.baseUrl]);
+  const postUrl = useMemo(
+    () => resolveChatUrl(cfg.baseUrl, cfg.chatSurface ?? "default"),
+    [cfg.baseUrl, cfg.chatSurface],
+  );
 
   const abort = useCallback(() => {
     abortRef.current?.abort();
@@ -177,7 +195,9 @@ export function useChatSession(cfg: UseChatSessionConfig) {
       const fetchFn = cfg.fetchImpl ?? fetch;
       const res = await fetchFn(historyEndpoint, {
         method: "GET",
-        headers: { "Content-Type": "application/json" },
+        headers: mergeChatAuthHeaders(cfg.apiKey, {
+          "Content-Type": "application/json",
+        }),
       });
       const raw = await res.json().catch(() => ({}));
       const sanitized = cfg.sanitizeHistory ? cfg.sanitizeHistory(raw) : raw;
@@ -268,6 +288,7 @@ export function useChatSession(cfg: UseChatSessionConfig) {
         await streamChatResponse({
           url: postUrl,
           fetchImpl: cfg.fetchImpl,
+          apiKey: cfg.apiKey,
           parseChunk: cfg.parseChunk,
           signal: controller.signal,
           body: {
